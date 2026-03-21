@@ -27,7 +27,7 @@ SECRET_KEY = "django-insecure-q8c*72lz)lm8x&4=m*uku=%0xb16#w#^94=q=@@o@tr+p4zv67
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
 
 # Application definition
@@ -42,9 +42,11 @@ INSTALLED_APPS = [
     'api',
     "rest_framework",
     "rest_framework_simplejwt",
+    "corsheaders",
 ]
 AUTH_USER_MODEL = 'api.User'
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -131,6 +133,13 @@ USE_I18N = True
 
 USE_TZ = True
 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/

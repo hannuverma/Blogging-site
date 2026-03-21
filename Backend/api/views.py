@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from rest_framework import status
 from django.db import transaction
-import traceback
 from django.contrib.auth import authenticate, login as django_login
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -67,6 +66,8 @@ def RetrievePostView(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 
 
 

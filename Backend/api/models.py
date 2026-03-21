@@ -15,6 +15,18 @@ class User(AbstractUser):
         return self.username
     
 class Post(models.Model):
+    Categories = [
+        ('Tech', 'Tech'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Travel', 'Travel'),
+        ('Food', 'Food'),
+        ('Education', 'Education'),
+        ('Health', 'Health'),
+        ('Entertainment', 'Entertainment'),
+        ('Business', 'Business'),
+        ('Sports', 'Sports'),
+        ('Other', 'Other'),
+        ]
     title = models.CharField(max_length=200)
     content = models.TextField()
     description = models.TextField(blank=True, null=True)
@@ -23,6 +35,7 @@ class Post(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     image = models.ImageField(upload_to='post_images/', blank=True, null=True)
     published = models.BooleanField(default=False)
+    category = models.CharField(max_length=100, blank=True, null=True, choices=Categories)
 
     def __str__(self):
         return f"{self.id} - {self.title} - {self.author.username}"
