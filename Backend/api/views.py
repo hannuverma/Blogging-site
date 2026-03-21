@@ -46,6 +46,7 @@ class UpdatePostView(generics.UpdateAPIView):
         post = self.get_object()
         if post.author != self.request.user:
             raise ValidationError("You do not have permission to edit this post.")
+        return Response({"detail": "Post updated successfully."}, status=status.HTTP_200_OK)
         serializer.save()
 
 class DeletePostView(generics.DestroyAPIView):
@@ -56,4 +57,16 @@ class DeletePostView(generics.DestroyAPIView):
         if instance.author != self.request.user:
             raise ValidationError("You do not have permission to delete this post.")
         instance.delete()
-# Create your views here.
+        return Response({"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def RetrievePostView(request):
+    if request.method == 'GET':
+        posts = Post.objects.filter(published=True).order_by('-updated_at','-created_at')
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+
