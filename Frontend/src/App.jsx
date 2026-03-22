@@ -11,12 +11,12 @@ import CreatePost from './pages/CreatePost';
 
 const Logout = () => {
   localStorage.clear()
-  return <Navigate to="/home" />;
+  return <Navigate to="/" />;
 }
 
 const RegisterAndLogout = () => { 
   localStorage.clear()
-  return <Register to="/home" />;
+  return <Register to="/" />;
 }
 
 const AppLayout = ({ theme, onToggleTheme }) => {
@@ -30,7 +30,7 @@ const AppLayout = ({ theme, onToggleTheme }) => {
         {!hideNavbar && <Navbar theme={theme} onToggleTheme={onToggleTheme} />}
         <main className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 lg:px-8">
           <Routes>
-            <Route path="/home" element={<Home />} />
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterAndLogout />} />
             <Route path="/logout" element={<Logout />} />

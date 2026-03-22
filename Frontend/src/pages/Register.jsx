@@ -20,7 +20,7 @@ const Register = () => {
                 const tokenResponse = await api.post('/api/token/', { email: Email, password: Password });
                 localStorage.setItem('access', tokenResponse.data.access);
                 localStorage.setItem('refresh', tokenResponse.data.refresh);
-                navigate('/home')
+                navigate('/')
             } else {
                 console.error('Registration failed:', response.data);
             }
@@ -29,6 +29,7 @@ const Register = () => {
         }
         finally {
             setLoading(false);
+            navigate('/')
         }
     }
   return (

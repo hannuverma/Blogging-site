@@ -17,7 +17,7 @@ const Login = () => {
             if (response.status === 200) {
                 localStorage.setItem('access', response.data.access);
                 localStorage.setItem('refresh', response.data.refresh);
-                navigate('/home')
+                navigate('/')
             }
         }catch(error){
             console.error('Error during login:', error);

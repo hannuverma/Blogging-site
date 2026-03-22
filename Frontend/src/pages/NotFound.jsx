@@ -11,7 +11,7 @@ const NotFound = () => {
           <DotLottieReact src={LottieFile} loop autoplay />
         </div>
         <Link
-          to="/home"
+          to="/"
           className="inline-flex rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
         >
           Back to Home

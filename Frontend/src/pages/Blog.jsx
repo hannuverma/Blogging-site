@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import api from '../api';
 import { jwtDecode } from 'jwt-decode';
 import { ACCESS_TOKEN } from '../constans';
-
+import ProtectedRoots from '../components/ProtectedRoots';
 import AddComment from '../components/AddComment';
 
 const Blog = () => {
@@ -76,7 +76,10 @@ const Blog = () => {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Comments</h2>
-          <AddComment onCommentAdded={handleCommentAdded} />
+          
+          <ProtectedRoots>
+            <AddComment onCommentAdded={handleCommentAdded} />
+          </ProtectedRoots>
 
           <div className="mt-5 space-y-3">
             {Blog.comments && Blog.comments.length === 0 && (
