@@ -46,14 +46,19 @@ function ProtectedRoots({children}) {
         }else{
             setIsAuthorized(true);
         }  
+    }
 
     if (IsAuthorized === null) {
-        auth()
-        return <div>Loading...</div>
+        return (
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <p className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    Checking session...
+                </p>
+            </div>
+        )
     }
 
     return IsAuthorized ? children : <Navigate to="/login" />
-}
 }
 
 export default ProtectedRoots

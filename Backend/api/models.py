@@ -59,7 +59,7 @@ class Like(models.Model):
         unique_together = ('post', 'user')
 
     def __str__(self):
-        return f"{self.user.username} likes {self.post.title}"
+        return f"{self.user.username} likes {self.post.title} by {self.post.author.username}"
     
 class Follow(models.Model):
     follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')

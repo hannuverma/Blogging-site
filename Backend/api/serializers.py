@@ -19,8 +19,18 @@ class UserSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
 
     author = serializers.ReadOnlyField(source='author.username')
-    
+    author_id = serializers.ReadOnlyField(source='author.id')
     class Meta:
         model = Post
-        fields = ("id", "title", "content", "description", "author", "created_at", "updated_at", "image", "published")
+        fields = ("id", "title", "content", "description", "author", "author_id", "created_at", "updated_at", "image", "published", "category")
+        extra_kwargs = {"author": {"read_only": True}, "created_at": {"read_only": True}, "updated_at": {"read_only": True}}
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.username')
+    author_id = serializers.ReadOnlyField(source='author.id')
+    
+    class Meta:
+        model = Comment
+        fields = ("id", "post", "author", "author_id", "content", "created_at", "updated_at")
         extra_kwargs = {"author": {"read_only": True}, "created_at": {"read_only": True}, "updated_at": {"read_only": True}}

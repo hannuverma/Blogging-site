@@ -1,64 +1,75 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { Link } from 'react-router-dom';
+import { ACCESS_TOKEN } from '../constans';
 
-const Navbar = async () => {
+const Navbar = ({ theme, onToggleTheme }) => {
+    const isLoggedIn = Boolean(localStorage.getItem(ACCESS_TOKEN));
 
-    const [profilePicture, setProfilePicture] = React.useState(null);
-    try {
-        const response = await fetch('http://localhost:8000/api/user/profile-picture/', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-            }
-        });
-        const data = await response.json();
-        setProfilePicture(data.profile_picture);
-    } catch (error) {
-        console.error('Error fetching profile picture:', error);
-    }
-
-
-  return (
-
-        <nav className='flex items-center justify-between p-4 bg-white dark:bg-black '>
-
-            <div className='flex items-center m-1'>
-                {/* SVG Icon */}
-                <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="25" 
-                    height="25" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="1.5" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="lucide lucide-menu text-black dark:text-white hover:text-gray-500 transition-colors duration-100"
+    return (
+        <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
+            <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+                <Link
+                    to="/home"
+                    className="text-2xl font-black tracking-tight text-slate-900 transition hover:text-sky-600 dark:text-white dark:hover:text-sky-400"
                 >
-                    <path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/>
-                </svg>
+                    InkJournal
+                </Link>
 
-                <span className='ml-3 font-bold text-black dark:text-white text-[30px] tracking-tight'>
-                    VoidBloggin
-                </span>
-                
-                <input type="search" placeholder="Search..." className="ml-4 p-2 border border-gray-300 dark:border-gray-600 bg-[#F9F9F9] dark:bg-black text-black dark:text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 
-                h-[35px] border-1 rounded-2xl" />
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <Link
+                        to="/home"
+                        className="rounded-full px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                    >
+                        Home
+                    </Link>
 
+                    {isLoggedIn && (
+                        <Link
+                            to="/create-post"
+                            className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+                        >
+                            Write
+                        </Link>
+                    )}
 
-            </div>
+                    {!isLoggedIn && (
+                        <Link
+                            to="/login"
+                            className="rounded-full px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        >
+                            Login
+                        </Link>
+                    )}
 
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square-pen-icon lucide-square-pen"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                    {!isLoggedIn && (
+                        <Link
+                            to="/register"
+                            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-500 dark:border-slate-600 dark:text-slate-200 dark:hover:border-slate-400"
+                        >
+                            Register
+                        </Link>
+                    )}
 
-                <span>Write</span>
+                    {isLoggedIn && (
+                        <Link
+                            to="/logout"
+                            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-500 dark:border-slate-600 dark:text-slate-200 dark:hover:border-slate-400"
+                        >
+                            Logout
+                        </Link>
+                    )}
 
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell-icon lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
-
-                <img src="https://via.placeholder.com/40" alt="Profile" className="ml-2 w-8 h-8 rounded-full" />
-            </div>
-        </nav>
-  )
-}
+                    <button
+                        type="button"
+                        onClick={onToggleTheme}
+                        className="rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-500 dark:border-slate-600 dark:text-slate-200 dark:hover:border-slate-400"
+                    >
+                        {theme === 'dark' ? 'Light' : 'Dark'}
+                    </button>
+                </div>
+            </nav>
+        </header>
+    );
+};
 
 export default Navbar

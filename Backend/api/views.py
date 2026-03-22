@@ -16,7 +16,7 @@ import os
 from django.db.models import Avg
 from rest_framework.exceptions import ValidationError
 from django.views.decorators.cache import cache_page
-from .serializers import PostSerializer, UserSerializer
+from .serializers import PostSerializer, UserSerializer, CommentSerializer
 from .models import User, Post, Comment, Like, Follow
 
 class CreateUserView(generics.CreateAPIView):
@@ -35,7 +35,8 @@ class CreatePostView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-    
+
+
 class UpdatePostView(generics.UpdateAPIView):
     queryset = Post.objects.all()
     permission_classes = (IsAuthenticated,)
@@ -59,6 +60,7 @@ class DeletePostView(generics.DestroyAPIView):
         return Response({"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def RetrievePostView(request):
     if request.method == 'GET':
         posts = Post.objects.filter(published=True).order_by('-updated_at','-created_at')
@@ -67,7 +69,56 @@ def RetrievePostView(request):
     
     return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def RetrievePostDetailView(request, post_id):
+    try:
+        post = Post.objects.get(id=post_id, published=True)
+    except Post.DoesNotExist:
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    comments = Comment.objects.filter(post_id=post_id).order_by('-updated_at', '-created_at')
 
+    post_serializer = PostSerializer(post)
+    comment_serializer = CommentSerializer(comments, many=True)
 
+    return Response({
+        "post": post_serializer.data,
+        "comments": comment_serializer.data
+    }, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def getCategories(request):
+    categories = Post.Categories
+    return Response(categories, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def CreateCommentView(request, post_id):
+    try:
+        post = Post.objects.get(id=post_id, published=True)
+    except Post.DoesNotExist:
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    data = request.data.copy()
+    data['post'] = post.id
+    serializer = CommentSerializer(data=data)
+
+    if serializer.is_valid():
+        serializer.save(author=request.user, post=post)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def DeleteCommentView(request, comment_id):
+    try:
+        comment = Comment.objects.get(id=comment_id)
+    except Comment.DoesNotExist:
+        return Response({"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if comment.author != request.user:
+        return Response({"detail": "You do not have permission to delete this comment."}, status=status.HTTP_403_FORBIDDEN)
+
+    comment.delete()
+    return Response({"detail": "Comment deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
