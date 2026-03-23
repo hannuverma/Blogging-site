@@ -40,9 +40,13 @@ const LibraryPostCard = ({ post, onDelete, onTogglePublish }) => {
             <div className="flex items-center gap-2">
               <span className={cn(
                 "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                post.published ? "bg-black text-white dark:bg-white dark:text-black" : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                post.bookmarked
+                  ? "bg-emerald-500 text-white"
+                  : post.published
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
               )}>
-                {post.published ? 'Published' : 'Draft'}
+                {post.bookmarked ? 'Bookmarked' : (post.published ? 'Published' : 'Draft')}
               </span>
               <span className="text-xs text-zinc-400">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
@@ -121,6 +125,7 @@ const LibraryPostCard = ({ post, onDelete, onTogglePublish }) => {
 
 const Library = () => {
   const [posts, setPosts] = useState([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -179,12 +184,44 @@ const Library = () => {
     }
   };
 
+  const fetchBookmarkedPosts = async () => {
+    try {
+      const [bookmarksRes, allPostsRes] = await Promise.all([
+        api.get("/api/bookmarks/"),
+        api.post("/api/posts/", { category: 'All', search: '' }),
+      ]);
+
+      const bookmarkedPostIdSet = new Set(
+        (bookmarksRes.data || []).map((b) => Number(b.post_id))
+      );
+
+      const userBookmarkedPosts = (allPostsRes.data || []).filter((post) =>
+        bookmarkedPostIdSet.has(Number(post.id))
+      );
+
+      setBookmarkedPosts(userBookmarkedPosts.map((post) => ({ ...post, bookmarked: true })));
+      setPosts((prevPosts) => prevPosts.map((post) => ({
+        ...post,
+        bookmarked: bookmarkedPostIdSet.has(Number(post.id)),
+      })));
+    } catch (err) {
+      console.error("Failed to fetch bookmarks", err);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchBookmarkedPosts();
+    }
+  }, [currentUser]);
+
+
   const filteredPosts = useMemo(() => {
     let base = [];
     switch (activeTab) {
       case 'published': base = posts.filter(p => p.published); break;
       case 'drafts': base = posts.filter(p => !p.published); break;
-      case 'bookmarks': base = posts.filter(p => currentUser?.bookmarks?.includes(p.id)); break;
+      case 'bookmarks': base = bookmarkedPosts; break;
       default: base = posts;
     }
 
@@ -192,7 +229,7 @@ const Library = () => {
       p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [activeTab, posts, searchQuery, currentUser]);
+  }, [activeTab, posts, bookmarkedPosts, searchQuery, currentUser]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">

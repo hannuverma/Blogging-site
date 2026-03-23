@@ -16,8 +16,8 @@ import os
 from django.db.models import Avg
 from rest_framework.exceptions import ValidationError
 from django.views.decorators.cache import cache_page
-from .serializers import PostSerializer, UserSerializer, CommentSerializer
-from .models import User, Post, Comment, Like, Follow
+from .serializers import PostSerializer, UserSerializer, CommentSerializer, BookmarkSerializer
+from .models import User, Post, Comment, Like, Follow, Bookmark
 from django.db.models import Q
 from google.oauth2 import id_token
 from google.oauth2 import id_token
@@ -26,6 +26,36 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 CLIENT_ID = "379118052183-m8c5h1g87oecvpbmnsclijamf4ocp9il.apps.googleusercontent.com"
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def GetAllBookmarks(request):
+    user = request.user
+    bookmarks = Bookmark.objects.filter(user=user).select_related('post')
+    serializer = BookmarkSerializer(bookmarks, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggleBookmark(request,):
+    userId = request.data.get('userId')
+    postId = request.data.get('postId')
+    if not userId:
+        return Response({"detail": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        post = Post.objects.get(id=postId, published=True)
+    except Post.DoesNotExist:
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    bookmark, created = Bookmark.objects.get_or_create(user_id=userId, post=post)
+
+    if not created:
+        bookmark.delete()
+        return Response({"detail": "Bookmark removed."}, status=status.HTTP_200_OK)
+
+    serializer = BookmarkSerializer(bookmark)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

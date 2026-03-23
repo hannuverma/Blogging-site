@@ -25,7 +25,6 @@ const Auth = () => {
       localStorage.setItem("access", res.data.access);
       localStorage.setItem("refresh", res.data.refresh);
       navigate('/');
-      console.log(res.data);
     };
   
 
@@ -34,7 +33,6 @@ const Auth = () => {
 
     if(isLogin){
       const res = await api.post('api/token/', {email: formData.email, password: formData.password});
-      console.log(res);
       if(res.status === 200){
         localStorage.setItem("access", res.data.access);
         localStorage.setItem("refresh", res.data.refresh);
@@ -43,11 +41,9 @@ const Auth = () => {
       
     }
     else{ 
-      console.log("Registering user...");
       try {
       const res = await api.post('api/user/register/', {username: formData.name, email: formData.email, password: formData.password});
       if(res.status === 201){
-        console.log("User registered successfully. Logging in...");
         const res2 = await api.post('api/token/', {email: formData.email, password: formData.password});
         localStorage.setItem("access", res2.data.access);
         localStorage.setItem("refresh", res2.data.refresh);

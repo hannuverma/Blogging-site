@@ -18,7 +18,7 @@ interface BlogContextType {
   updatePost: (id: string, updates: Partial<Post>) => void;
   deletePost: (id: string) => void;
   toggleLike: (postId: string) => void;
-  toggleBookmark: (postId: string) => void;
+  toggleBookmark: (postId: string, userId: string) => void;
   toggleFollow: (userId: string) => void;
   toggleMute: (userId: string) => void;
   reportUser: (userId: string) => void;
@@ -164,17 +164,19 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
-  const toggleBookmark = (postId: string) => {
-    if (!currentUser) return;
-    const isBookmarked = currentUser.bookmarks.includes(postId);
-    const updatedUser = {
-      ...currentUser,
-      bookmarks: isBookmarked 
-        ? currentUser.bookmarks.filter(id => id !== postId) 
-        : [...currentUser.bookmarks, postId]
-    };
-    setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+  const toggleBookmark = async (postId: string, userId: string) => {
+    if (!userId) return;
+    try{
+      const body ={
+        postId: postId,
+        userId: userId
+      }
+      const response = await api.post('/api/bookmarks/create/', body);
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      throw error;
+    }
   };
 
   const toggleFollow = (userId: string) => {

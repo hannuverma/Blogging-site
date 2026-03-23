@@ -71,7 +71,6 @@ const PostDetail = () => {
     try {
       // Try to fetch published post first
       const res = await api.get(`/api/posts/${id}/`);
-      console.log(res)
       const normalizedComments = Array.isArray(res.data?.comments)
         ? res.data.comments.map(normalizeComment)
         : [];
@@ -89,7 +88,6 @@ const PostDetail = () => {
           ? res.data.comments.map(normalizeComment)
           : [];
         const normalizedPost = normalizePost(res.data?.post, normalizedComments.length);
-        console.log(res)
         setComments(normalizedComments);
         setPost(normalizedPost);
         setLikesCount(normalizedPost.likes.length);

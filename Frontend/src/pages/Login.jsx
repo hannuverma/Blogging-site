@@ -9,7 +9,6 @@ function Login() {
       token: token
     });
 
-    console.log(res.data);
   };
 
   return (

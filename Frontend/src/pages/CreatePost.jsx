@@ -97,7 +97,6 @@ const CreatePost = () => {
             if (isEditing) {
                 const response = await api.put(`/api/posts/${id}/edit/`, FormDataToSend);
                 if (response.status === 200) {
-                    console.log("Post updated successfully");
                     setShowSuccess(true);
                     setTimeout(() => {
                         setShowSuccess(false);
@@ -110,7 +109,6 @@ const CreatePost = () => {
             else {
             const response = await api.post('/api/posts/create/', FormDataToSend);
             if (response.status === 201) {
-                console.log("Post created successfully");
               setShowSuccess(true);
                 setPost({
                     title: '',

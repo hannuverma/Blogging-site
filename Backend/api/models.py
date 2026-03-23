@@ -37,6 +37,7 @@ class Post(models.Model):
     image = models.ImageField(upload_to='post_images/', blank=True, null=True)
     published = models.BooleanField(default=False)
     category = models.CharField(max_length=100, blank=True, null=True, choices=Categories)
+    isBookmarked = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.id} - {self.title} - {self.author.username}"
@@ -72,5 +73,16 @@ class Follow(models.Model):
 
     def __str__(self):
         return f"{self.follower.username} follows {self.following.username}"
+
+class Bookmark(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookmarks')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='bookmarked_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f"{self.user.username} bookmarked {self.post.title} by {self.post.author.username}"
 
 # Create your models here.

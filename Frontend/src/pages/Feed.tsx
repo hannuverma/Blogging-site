@@ -45,8 +45,8 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
         name: res.data.username,
         email: res.data.email,
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(res.data.username)}&background=0f172a&color=fff`,
-        id: res.data.id,
-        bookmarks: [],
+        id: String(res.data.id),
+        bookmarks: Array.isArray(res.data.bookmarks) ? res.data.bookmarks.map((bookmarkId: number | string) => String(bookmarkId)) : [],
         following: [],
         muted: [],
 
@@ -66,11 +66,34 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     fetchUser();
   }, [location.pathname]);
 
-
   const isLiked = currentUser ? post.likes.includes(currentUser.id) : false;
-  const isBookmarked = currentUser ? currentUser.bookmarks.includes(post.id) : false;
+  const isBookmarked = currentUser ? currentUser.bookmarks.includes(String(post.id)) : false;
   const isFollowing = currentUser ? currentUser.following.includes(post.authorId) : false;
   const isMuted = currentUser ? currentUser.muted.includes(post.authorId) : false;
+
+  const handleBookmarkClick = async () => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      await toggleBookmark(post.id, currentUser.id);
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        const postId = String(post.id);
+        const alreadyBookmarked = prev.bookmarks.includes(postId);
+        return {
+          ...prev,
+          bookmarks: alreadyBookmarked
+            ? prev.bookmarks.filter((id) => id !== postId)
+            : [...prev.bookmarks, postId],
+        };
+      });
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
+  };
 
   if (isMuted) return null;
 
@@ -193,7 +216,7 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
           </div>
 
           <button
-            onClick={() => toggleBookmark(post.id)}
+            onClick={handleBookmarkClick}
             className={cn(
               "p-2 rounded-full transition-colors",
               isBookmarked ? "text-black dark:text-white bg-zinc-100 dark:bg-zinc-800" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
@@ -236,7 +259,6 @@ const Feed: React.FC = () => {
     try {
       const response = await api.post('/api/posts/', body);
 
-      console.log(body); // Debugging log
       const normalizedPosts: Post[] = response.data.map((post: any) => ({
         id: String(post.id),
         title: post.title ?? '',
@@ -251,6 +273,7 @@ const Feed: React.FC = () => {
         createdAt: post.created_at ?? new Date().toISOString(),
         likes: Array.isArray(post.likes) ? post.likes : [],
         commentCount: typeof post.comment_count === 'number' ? post.comment_count : 0,
+        isBookmarked: Boolean(post.is_bookmarked)
       }));
       
       setPosts(normalizedPosts);

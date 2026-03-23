@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from .views import CreateUserView, CreatePostView, UpdatePostView, DeletePostView, RetrievePostView, RetrievePostDetailView,getCategories, CreateCommentView, DeleteCommentView, whoAmI, getUserPosts, getDraftPosts, getUserPost, google_login
-
+from .views import toggleBookmark, GetAllBookmarks
 
 urlpatterns = [
     path("register/", CreateUserView.as_view(), name="register"),
@@ -18,4 +18,6 @@ urlpatterns = [
     path('user/drafts/', getDraftPosts, name='get_draft_posts'),
     path('user/posts/<int:post_id>/', getUserPost, name='get_user_post'),
     path('auth/google/', google_login, name='google_login'),
+    path('bookmarks/create/', toggleBookmark, name='create_bookmark'),
+    path('bookmarks/', GetAllBookmarks, name='get_all_bookmarks'),
 ]

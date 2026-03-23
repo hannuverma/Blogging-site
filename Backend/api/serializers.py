@@ -1,11 +1,27 @@
 from rest_framework import serializers
-from .models import User, Post, Comment, Like, Follow
+from .models import User, Post, Comment, Like, Follow, Bookmark
 
+class BookmarkSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    user_id = serializers.ReadOnlyField(source='user.id')
+    post_title = serializers.ReadOnlyField(source='post.title')
+    post_id = serializers.ReadOnlyField(source='post.id')
+    
+    class Meta:
+        model = Bookmark
+        fields = ("id", "user", "user_id", "post", "post_title", "post_id", "created_at")
+        extra_kwargs = {"user": {"read_only": True}, "created_at": {"read_only": True}}
 
 class UserSerializer(serializers.ModelSerializer):
+    bookmarks = serializers.SerializerMethodField()
+
+    def get_bookmarks(self, obj):
+        # Return bookmarked post IDs so frontend can compare against post.id directly.
+        return list(obj.bookmarks.values_list('post_id', flat=True))
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "password")
+        fields = ("id", "username", "email", "password", "bookmarks")
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
