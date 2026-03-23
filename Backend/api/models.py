@@ -38,7 +38,7 @@ class Post(models.Model):
     published = models.BooleanField(default=False)
     category = models.CharField(max_length=100, blank=True, null=True, choices=Categories)
     isBookmarked = models.BooleanField(default=False)
-
+    commentCount = models.IntegerField(default=0)
     def __str__(self):
         return f"{self.id} - {self.title} - {self.author.username}"
     

@@ -36,9 +36,13 @@ class PostSerializer(serializers.ModelSerializer):
 
     author = serializers.ReadOnlyField(source='author.username')
     author_id = serializers.ReadOnlyField(source='author.id')
+    commentCount = serializers.SerializerMethodField()
+
+    def get_commentCount(self, obj):
+        return obj.comments.count()
     class Meta:
         model = Post
-        fields = ("id", "title", "content", "description", "author", "author_id", "created_at", "updated_at", "image", "published", "category")
+        fields = ("id", "title", "content", "description", "author", "author_id", "created_at", "updated_at", "image", "published", "category", "commentCount")
         extra_kwargs = {"author": {"read_only": True}, "created_at": {"read_only": True}, "updated_at": {"read_only": True}}
 
 
@@ -50,3 +54,12 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ("id", "post", "author", "author_id", "content", "created_at", "updated_at")
         extra_kwargs = {"author": {"read_only": True}, "created_at": {"read_only": True}, "updated_at": {"read_only": True}}
+
+class LikeSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    user_id = serializers.ReadOnlyField(source='user.id')
+    
+    class Meta:
+        model = Like
+        fields = ("id", "post", "user", "user_id", "created_at")
+        extra_kwargs = {"user": {"read_only": True}, "created_at": {"read_only": True}}

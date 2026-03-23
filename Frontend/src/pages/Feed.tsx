@@ -272,7 +272,7 @@ const Feed: React.FC = () => {
         published: Boolean(post.published),
         createdAt: post.created_at ?? new Date().toISOString(),
         likes: Array.isArray(post.likes) ? post.likes : [],
-        commentCount: typeof post.comment_count === 'number' ? post.comment_count : 0,
+        commentCount: typeof post.commentCount === 'number' ? post.commentCount : 0,
         isBookmarked: Boolean(post.is_bookmarked)
       }));
       

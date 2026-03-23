@@ -27,6 +27,23 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 CLIENT_ID = "379118052183-m8c5h1g87oecvpbmnsclijamf4ocp9il.apps.googleusercontent.com"
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggleLike(request, post_id):
+    user = request.user
+    try:
+        post = Post.objects.get(id=post_id, published=True)
+    except Post.DoesNotExist:
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    like, created = Like.objects.get_or_create(user=user, post=post)
+
+    if not created:
+        like.delete()
+        return Response({"detail": "Like removed."}, status=status.HTTP_200_OK)
+
+    return Response({"detail": "Post liked."}, status=status.HTTP_201_CREATED)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def GetAllBookmarks(request):
