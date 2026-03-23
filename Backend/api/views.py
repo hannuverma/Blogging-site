@@ -19,6 +19,37 @@ from django.views.decorators.cache import cache_page
 from .serializers import PostSerializer, UserSerializer, CommentSerializer
 from .models import User, Post, Comment, Like, Follow
 from django.db.models import Q
+from google.oauth2 import id_token
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+CLIENT_ID = "379118052183-m8c5h1g87oecvpbmnsclijamf4ocp9il.apps.googleusercontent.com"
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_login(request):
+    token = request.data.get("token")
+
+    try:
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
+
+        email = idinfo['email']
+        name = idinfo.get('name')
+
+        user, created = User.objects.get_or_create(username=email, defaults={
+            'email': email,
+            'first_name': name
+        })
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        })
+
+    except ValueError:
+        return Response({"error": "Invalid token"}, status=400)
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()

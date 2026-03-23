@@ -6,13 +6,28 @@ import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import api from '../api';
-
+import axios from 'axios';
+import { GoogleLogin } from '@react-oauth/google';
 
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const navigate = useNavigate();
+
+    const handleSuccess = async (credentialResponse: any) => {
+      const token = credentialResponse.credential;
+  
+      const res = await api.post("api/auth/google/", {
+        token: token
+      });
+
+      localStorage.setItem("access", res.data.access);
+      localStorage.setItem("refresh", res.data.refresh);
+      navigate('/');
+      console.log(res.data);
+    };
+  
 
   const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -117,6 +132,10 @@ const Auth = () => {
           {isLogin ? 'Sign In' : 'Sign Up'}
           <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
         </button>
+            <GoogleLogin
+              onSuccess={handleSuccess}
+              onError={() => console.log("Login Failed")}
+            />
         </form>
 
         <div className="relative py-4">
@@ -141,7 +160,6 @@ const Auth = () => {
           </p>
         </div>
       </motion.div>
-
     </div>
   );
 };

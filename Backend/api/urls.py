@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import CreateUserView, CreatePostView, UpdatePostView, DeletePostView, RetrievePostView, RetrievePostDetailView,getCategories, CreateCommentView, DeleteCommentView, whoAmI, getUserPosts, getDraftPosts, getUserPost
+from .views import CreateUserView, CreatePostView, UpdatePostView, DeletePostView, RetrievePostView, RetrievePostDetailView,getCategories, CreateCommentView, DeleteCommentView, whoAmI, getUserPosts, getDraftPosts, getUserPost, google_login
 
 
 urlpatterns = [
@@ -17,4 +17,5 @@ urlpatterns = [
     path('user/posts/', getUserPosts, name='get_user_posts'),
     path('user/drafts/', getDraftPosts, name='get_draft_posts'),
     path('user/posts/<int:post_id>/', getUserPost, name='get_user_post'),
+    path('auth/google/', google_login, name='google_login'),
 ]

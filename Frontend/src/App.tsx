@@ -17,6 +17,7 @@ import api from './api';
 import { useLocation } from 'react-router-dom';
 import NotFound from './pages/NotFound';
 import ProtectedRoots from './components/ProtectedRoots';
+import Login from './pages/Login';
 const AppContent = () => {
 
   const { theme } = useBlog();
@@ -63,6 +64,7 @@ const AppContent = () => {
             <Route path="/" element={<Feed />} />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/auth" element={authChecked && currentUser ? <Navigate to="/" /> : <Auth />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/create" element={<ProtectedRoots><CreatePost /></ProtectedRoots>} />
             <Route path="/edit/:id" element={<ProtectedRoots><CreatePost /></ProtectedRoots>} />
             <Route path="/library" element={<ProtectedRoots><Library /></ProtectedRoots>} />
