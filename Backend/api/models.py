@@ -16,6 +16,7 @@ class User(AbstractUser):
     
 class Post(models.Model):
     Categories = [
+        ('All', 'All'),
         ('Tech', 'Tech'),
         ('Lifestyle', 'Lifestyle'),
         ('Travel', 'Travel'),

@@ -18,6 +18,7 @@ from rest_framework.exceptions import ValidationError
 from django.views.decorators.cache import cache_page
 from .serializers import PostSerializer, UserSerializer, CommentSerializer
 from .models import User, Post, Comment, Like, Follow
+from django.db.models import Q
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -46,7 +47,6 @@ class UpdatePostView(generics.UpdateAPIView):
         post = self.get_object()
         if post.author != self.request.user:
             raise ValidationError("You do not have permission to edit this post.")
-        return Response({"detail": "Post updated successfully."}, status=status.HTTP_200_OK)
         serializer.save()
 
 class DeletePostView(generics.DestroyAPIView):
@@ -60,15 +60,90 @@ class DeletePostView(generics.DestroyAPIView):
         return Response({"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getUserPosts(request):  
+    user = request.user    
+    posts = Post.objects.filter(author=user).order_by('-updated_at', '-created_at')
+
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getUserPost(request, post_id):
+    user = request.user
+    try:
+        post = Post.objects.get(id=post_id, author=user)
+    except Post.DoesNotExist:
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+    comments = Comment.objects.filter(post_id=post_id).order_by('-updated_at', '-created_at')
+
+    post_serializer = PostSerializer(post)
+    comment_serializer = CommentSerializer(comments, many=True)
+
+    return Response({
+        "post": post_serializer.data,
+        "comments": comment_serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getDraftPosts(request):
+    user = request.user
+    posts = Post.objects.filter(author=user, published=False).order_by('-updated_at', '-created_at')
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
+
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def whoAmI(request):
+    if request.user.is_authenticated:
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({"detail": "Not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def RetrievePostView(request):
-    if request.method == 'GET':
-        posts = Post.objects.filter(published=True).order_by('-updated_at','-created_at')
-        serializer = PostSerializer(posts, many=True)
+    if request.method == 'POST':
+        data = request.data
+        post = Post.objects.filter(published=True).order_by('-updated_at', '-created_at')
+
+        category = data.get('category', None)
+        if category and category != 'All':
+            post = post.filter(category=category)
+        search_query = data.get('search', None)
+        if search_query:
+            post = post.filter(
+                Q(title__icontains=search_query) | 
+                Q(content__icontains=search_query) |
+                Q(author__username__icontains=search_query)
+            )
+        serializer = PostSerializer(post, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def SearchPosts(request):
+    query = request.GET.get('q', '')
+
+    if query:
+        posts = Post.objects.filter(
+            Q(title__icontains=query) | 
+            Q(content__icontains=query) |
+            Q(author__username__icontains=query)
+        ).filter(published=True)
+    else:
+        posts = Post.objects.filter(published=True)
+        
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def RetrievePostDetailView(request, post_id):
@@ -88,6 +163,7 @@ def RetrievePostDetailView(request, post_id):
     }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def getCategories(request):
     categories = Post.Categories
     return Response(categories, status=status.HTTP_200_OK)

@@ -25,7 +25,7 @@ const AppLayout = ({ theme, onToggleTheme }) => {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_38%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.12),_transparent_34%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_34%)]" />
       <div className="relative z-10">
         {!hideNavbar && <Navbar theme={theme} onToggleTheme={onToggleTheme} />}
         <main className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 lg:px-8">

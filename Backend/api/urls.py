@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import CreateUserView, CreatePostView, UpdatePostView, DeletePostView, RetrievePostView, RetrievePostDetailView,getCategories, CreateCommentView, DeleteCommentView
+from .views import CreateUserView, CreatePostView, UpdatePostView, DeletePostView, RetrievePostView, RetrievePostDetailView,getCategories, CreateCommentView, DeleteCommentView, whoAmI, getUserPosts, getDraftPosts, getUserPost
 
 
 urlpatterns = [
@@ -13,4 +13,8 @@ urlpatterns = [
     path('categories/', getCategories, name='get_categories'),
     path('posts/<int:post_id>/comments/create/', CreateCommentView, name='create_comment'),
     path('comments/<int:comment_id>/delete/', DeleteCommentView, name='delete_comment'),
+    path('whoami/', whoAmI, name='whoami'),
+    path('user/posts/', getUserPosts, name='get_user_posts'),
+    path('user/drafts/', getDraftPosts, name='get_draft_posts'),
+    path('user/posts/<int:post_id>/', getUserPost, name='get_user_post'),
 ]
