@@ -134,7 +134,11 @@ const Library = () => {
   const fetchUserPosts = async () => {
     try {
       const res = await api.get("/api/user/posts/");
-      setPosts(res.data || []);
+      const normalizedPosts = Array.isArray(res.data) ? res.data.map(post => ({
+        ...post,
+        likes: Array.isArray(post.likes) ? post.likes.map(id => String(id)) : []
+      })) : [];
+      setPosts(normalizedPosts);
     } catch (error) {
       console.error("Failed to fetch user posts:", error);
     }
@@ -199,9 +203,16 @@ const Library = () => {
         bookmarkedPostIdSet.has(Number(post.id))
       );
 
-      setBookmarkedPosts(userBookmarkedPosts.map((post) => ({ ...post, bookmarked: true })));
+      const normalizePost = (post) => ({
+        ...post,
+        likes: Array.isArray(post.likes) ? post.likes.map(id => String(id)) : [],
+        bookmarked: true
+      });
+
+      setBookmarkedPosts(userBookmarkedPosts.map(normalizePost));
       setPosts((prevPosts) => prevPosts.map((post) => ({
         ...post,
+        likes: Array.isArray(post.likes) ? post.likes.map(id => String(id)) : [],
         bookmarked: bookmarkedPostIdSet.has(Number(post.id)),
       })));
     } catch (err) {

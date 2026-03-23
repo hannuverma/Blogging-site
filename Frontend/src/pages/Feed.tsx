@@ -14,9 +14,10 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const PostCard: React.FC<{ post: Post }> = ({ post }) => {
+const PostCard: React.FC<{ post: Post }> = ({ post: initialPost }) => {
   const {toggleLike, toggleBookmark, toggleFollow, toggleMute, reportUser } = useBlog();
   const [showMenu, setShowMenu] = useState(false);
+  const [post, setPost] = useState(initialPost);
   const navigate = useNavigate();
 
   const location = useLocation();
@@ -66,10 +67,14 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
     fetchUser();
   }, [location.pathname]);
 
-  const isLiked = currentUser ? post.likes.includes(currentUser.id) : false;
+  useEffect(() => {
+    setPost(initialPost);
+  }, [initialPost]);
+
+  const isLiked = currentUser ? post.likes.includes(String(currentUser.id)) : false;
   const isBookmarked = currentUser ? currentUser.bookmarks.includes(String(post.id)) : false;
-  const isFollowing = currentUser ? currentUser.following.includes(post.authorId) : false;
-  const isMuted = currentUser ? currentUser.muted.includes(post.authorId) : false;
+  const isFollowing = currentUser ? currentUser.following.includes(String(post.authorId)) : false;
+  const isMuted = currentUser ? currentUser.muted.includes(String(post.authorId)) : false;
 
   const handleBookmarkClick = async () => {
     if (!currentUser) {
@@ -92,6 +97,33 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
       });
     } catch (error) {
       console.error('Error toggling bookmark:', error);
+    }
+  };
+
+  const handleLikeClick = async () => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      const userId = String(currentUser.id);
+      const alreadyLiked = post.likes.includes(userId);
+      
+      // Update local state immediately
+      setPost((prev) => ({
+        ...prev,
+        likes: alreadyLiked
+          ? prev.likes.filter((id) => String(id) !== userId)
+          : [...prev.likes, userId],
+      }));
+
+      // Make API call
+      await toggleLike(post.id, currentUser.id);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // Revert local state on error
+      setPost(initialPost);
     }
   };
 
@@ -197,7 +229,7 @@ const PostCard: React.FC<{ post: Post }> = ({ post }) => {
         <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => toggleLike(post.id)}
+              onClick={handleLikeClick}
               className={cn(
                 "flex items-center gap-1.5 text-sm font-medium transition-colors",
                 isLiked ? "text-rose-500" : "text-zinc-500 hover:text-rose-500"
@@ -271,7 +303,7 @@ const Feed: React.FC = () => {
         authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author ?? 'User')}&background=e2e8f0&color=0f172a`,
         published: Boolean(post.published),
         createdAt: post.created_at ?? new Date().toISOString(),
-        likes: Array.isArray(post.likes) ? post.likes : [],
+        likes: Array.isArray(post.likes) ? post.likes.map((id: string | number) => String(id)) : [],
         commentCount: typeof post.commentCount === 'number' ? post.commentCount : 0,
         isBookmarked: Boolean(post.is_bookmarked)
       }));

@@ -37,12 +37,18 @@ class PostSerializer(serializers.ModelSerializer):
     author = serializers.ReadOnlyField(source='author.username')
     author_id = serializers.ReadOnlyField(source='author.id')
     commentCount = serializers.SerializerMethodField()
+    likes = serializers.SerializerMethodField()
 
     def get_commentCount(self, obj):
         return obj.comments.count()
+
+    def get_likes(self, obj):
+        # Return array of user IDs who liked this post
+        return list(obj.likes.values_list('user_id', flat=True))
+
     class Meta:
         model = Post
-        fields = ("id", "title", "content", "description", "author", "author_id", "created_at", "updated_at", "image", "published", "category", "commentCount")
+        fields = ("id", "title", "content", "description", "author", "author_id", "created_at", "updated_at", "image", "published", "category", "commentCount", "likes")
         extra_kwargs = {"author": {"read_only": True}, "created_at": {"read_only": True}, "updated_at": {"read_only": True}}
 
 

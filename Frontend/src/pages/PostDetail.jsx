@@ -21,7 +21,7 @@ const normalizePost = (raw, commentsLen = 0) => ({
   author: raw?.author ?? 'Unknown author',
   authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(raw?.author ?? 'Author')}&background=e2e8f0&color=0f172a`,
   createdAt: raw?.created_at ?? new Date().toISOString(),
-  likes: Array.isArray(raw?.likes) ? raw.likes : [],
+  likes: Array.isArray(raw?.likes) ? raw.likes.map(id => String(id)) : [],
   commentCount: typeof raw?.comment_count === 'number' ? raw.comment_count : commentsLen,
   category: raw?.category ?? 'Other',
 });
@@ -78,7 +78,11 @@ const PostDetail = () => {
       setComments(normalizedComments);
       setPost(normalizedPost);
       setLikesCount(normalizedPost.likes.length);
-      setIsLiked(false);
+      if (currentUser) {
+        setIsLiked(normalizedPost.likes.includes(String(currentUser.id)));
+      } else {
+        setIsLiked(false);
+      }
       setIsBookmarked(false);
     } catch (publishedError) {
       // If published post not found, try to fetch user's own post (including drafts)
@@ -91,7 +95,11 @@ const PostDetail = () => {
         setComments(normalizedComments);
         setPost(normalizedPost);
         setLikesCount(normalizedPost.likes.length);
-        setIsLiked(false);
+        if (currentUser) {
+          setIsLiked(normalizedPost.likes.includes(String(currentUser.id)));
+        } else {
+          setIsLiked(false);
+        }
         setIsBookmarked(false);
       } catch (draftError) {
         console.error('Error fetching post detail:', draftError);
@@ -133,6 +141,12 @@ const PostDetail = () => {
     }
   }, [post?.id]);
 
+  useEffect(() => {
+    if (post && currentUser) {
+      setIsLiked(post.likes.includes(String(currentUser.id)));
+    }
+  }, [post?.id, currentUser?.id]);
+
   if (!post) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -169,12 +183,40 @@ const PostDetail = () => {
     })();
   };
 
-  const handleLike = () => {
-    setIsLiked((prev) => {
-      const next = !prev;
-      setLikesCount((count) => (next ? count + 1 : Math.max(0, count - 1)));
-      return next;
-    });
+  const handleLike = async () => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      const userId = String(currentUser.id);
+      const alreadyLiked = post.likes.includes(userId);
+      
+      // Update local state immediately
+      setPost((prev) => {
+        if (!prev) return prev;
+        const newLikes = alreadyLiked
+          ? prev.likes.filter((id) => id !== userId)
+          : [...prev.likes, userId];
+        return {
+          ...prev,
+          likes: newLikes,
+        };
+      });
+      
+      setLikesCount((count) => alreadyLiked ? Math.max(0, count - 1) : count + 1);
+      setIsLiked(!alreadyLiked);
+
+      // Make API call
+      const body = { postId: post.id };
+      await api.post(`/api/posts/${post.id}/like/`, body);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // Revert local state on error
+      setIsLiked((prev) => !prev);
+      fetchPostDetail();
+    }
   };
 
   const handleBookmark = () => {

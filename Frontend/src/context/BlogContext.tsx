@@ -17,7 +17,7 @@ interface BlogContextType {
   addPost: (post: Omit<Post, 'id' | 'authorId' | 'authorName' | 'authorAvatar' | 'createdAt' | 'likes' | 'commentCount'>) => void;
   updatePost: (id: string, updates: Partial<Post>) => void;
   deletePost: (id: string) => void;
-  toggleLike: (postId: string) => void;
+  toggleLike: (postId: string, userId: string) => void;
   toggleBookmark: (postId: string, userId: string) => void;
   toggleFollow: (userId: string) => void;
   toggleMute: (userId: string) => void;
@@ -150,18 +150,19 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await api.delete(`/api/posts/${id}/delete/`);
   };
 
-  const toggleLike = (postId: string) => {
-    if (!currentUser) return;
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const liked = p.likes.includes(currentUser.id);
-        return {
-          ...p,
-          likes: liked ? p.likes.filter(id => id !== currentUser.id) : [...p.likes, currentUser.id]
-        };
+  const toggleLike = async (postId: string, userId: string) => {
+    if (!userId) return;
+    try{
+      const body ={
+        postId: postId,
       }
-      return p;
-    }));
+      const response = await api.post('/api/posts/' + postId + '/like/', body);
+      console.log(response);
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      throw error;
+    }
   };
 
   const toggleBookmark = async (postId: string, userId: string) => {
