@@ -6,14 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>blog-app</title>
     <script>
-      // Apply theme immediately to prevent flash
+      // Force dark theme immediately to prevent flash
       (function() {
-        const theme = localStorage.getItem('vibe-blog-theme') || 'light';
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        localStorage.setItem('vibe-blog-theme', 'dark');
+        document.documentElement.classList.add('dark');
       })();
     </script>
   </head>

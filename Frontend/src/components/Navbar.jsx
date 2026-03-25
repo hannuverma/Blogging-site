@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 
 const Navbar = () => {
-  const { theme, toggleTheme, currentUser, fetchCurrentUser, logout } = useBlog();
+  const { currentUser, fetchCurrentUser, logout } = useBlog();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,9 +18,7 @@ const Navbar = () => {
   }, [location.pathname, fetchCurrentUser]);
 
   return (
-    <nav className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-black/80 border-zinc-800 backdrop-blur-md' : 'bg-white/80 border-zinc-200 backdrop-blur-md'
-    }`}>
+    <nav className="sticky top-0 z-50 border-b transition-colors duration-300 bg-black/80 border-zinc-800 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-8">

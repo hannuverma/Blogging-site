@@ -83,10 +83,7 @@ export const BlogProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('vibe-blog-theme');
-    return saved || 'light';
-  });
+  const [theme] = useState('dark');
 
   const [isFetchingPosts, setIsFetchingPosts] = useState(false);
   const [isFetchingUser, setIsFetchingUser] = useState(false);
@@ -112,27 +109,13 @@ export const BlogProvider = ({ children }) => {
     localStorage.setItem('vibe-blog-comments', JSON.stringify(comments));
   }, [comments]);
 
-  // Theme logic - Apply immediately on mount and whenever theme changes
+  // Theme logic - lock the app to dark mode
   useEffect(() => {
-    localStorage.setItem('vibe-blog-theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    localStorage.setItem('vibe-blog-theme', 'dark');
+    document.documentElement.classList.add('dark');
   }, [theme]);
 
-  // Apply theme immediately on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('vibe-blog-theme') || 'light';
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleTheme = () => {};
 
   const fetchCurrentUser = useCallback(async () => {
     const token = localStorage.getItem(ACCESS_TOKEN);

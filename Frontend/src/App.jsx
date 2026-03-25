@@ -19,7 +19,7 @@ import ProtectedRoots from './components/ProtectedRoots';
 import Login from './pages/Login';
 
 const AppContent = () => {
-  const { theme, currentUser, fetchCurrentUser } = useBlog();
+  const { currentUser, fetchCurrentUser } = useBlog();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -41,14 +41,14 @@ const AppContent = () => {
   // Optional: Prevent flicker while checking auth on initial load
   if (!authChecked) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="animate-pulse text-emerald-500 font-bold">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black'}`}>
+    <div className="min-h-screen transition-colors duration-300 bg-black text-white">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Routes>
