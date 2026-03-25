@@ -6,5 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   assetsInclude: ['**/*.lottie'],
+  css: {
+    transformer: 'postcss', // 🔥 disables lightningcss
+  },
   base: process.env.VITE_BASE_PATH || '/',
 })
