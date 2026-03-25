@@ -184,7 +184,7 @@ def whoAmI(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response({"detail": "Not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
 
-@api_view(['POST'])
+@api_view(['POST', 'GET'])
 @permission_classes([AllowAny])
 def RetrievePostView(request):
     if request.method == 'POST':
@@ -203,7 +203,10 @@ def RetrievePostView(request):
             )
         serializer = PostSerializer(post, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+    else:
+        post = Post.objects.filter(published=True).order_by('-updated_at', '-created_at')
+        serializer = PostSerializer(post, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['GET'])

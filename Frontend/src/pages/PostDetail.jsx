@@ -31,6 +31,7 @@ const PostDetail = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [ReadingTime, setReadingTime] = useState(0);
   const loadPostDetail = async () => {
     if (!id) return;
     const detail = await fetchPostDetail(id);
@@ -39,6 +40,7 @@ const PostDetail = () => {
     setLikesCount(detail.post?.likes?.length ?? 0);
     setIsLiked(Boolean(detail.post && currentUser && detail.post.likes.includes(String(currentUser.id))));
     setIsBookmarked(Boolean(currentUser?.bookmarks?.includes(String(detail.post?.id))));
+    setReadingTime(Math.ceil(post.content.split(' ').length / 200)); // Assuming 200 WPM reading speed
   };
 
   useEffect(() => {
@@ -105,6 +107,7 @@ const PostDetail = () => {
       }
     })();
   };
+
 
   const handleLike = async () => {
     if (!currentUser) {
@@ -218,7 +221,7 @@ const PostDetail = () => {
                   {post.authorName}
                 </Link>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {createdAtLabel} • 5 min read
+                  {createdAtLabel} • {ReadingTime < 1 ? 1 : ReadingTime} min read
                 </p>
               </div>
             </div>

@@ -11,6 +11,8 @@ const Auth = () => {
   const navigate = useNavigate();
 
   const handleSuccess = async (credentialResponse) => {
+        localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
     try {
       const token = credentialResponse.credential;
       const res = await api.post("api/auth/google/", { token: token });

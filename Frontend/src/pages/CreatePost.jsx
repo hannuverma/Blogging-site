@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Send, Image as ImageIcon, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,6 +14,7 @@ const CreatePost = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const imageInputRef = useRef(null);
     const [Post, setPost] = useState({
         title: '',
         content: '',
@@ -134,16 +135,16 @@ const CreatePost = () => {
         }
     };
 
-	const handleImageChange = (e) => {
-		const file = e.target.files[0];
-		if (file) {
-			setPost((prev) => ({
-				...prev,
-				image: file,
-				imagePreview: URL.createObjectURL(file),
-			}));
-		}
-	};       
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImagePreview(URL.createObjectURL(file));
+    setPost((prev) => ({
+      ...prev,
+      image: file,
+    }));
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -220,13 +221,34 @@ const CreatePost = () => {
         </div>
 
         <div className="space-y-4">
+          <input
+            ref={imageInputRef}
+            id="cover-image-input"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+          />
           <label className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Cover Image</label>
-          <div className="relative group aspect-video rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center transition-all hover:border-emerald-500/50">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => imageInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                imageInputRef.current?.click();
+              }
+            }}
+            className="relative group aspect-video rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center transition-all hover:border-emerald-500/50 cursor-pointer"
+          >
             {Post.image ? (
               <>
                 <img src={typeof Post.image === 'string' ? Post.image : imagePreview || ''} alt="Cover preview" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setPost({ ...Post, image: null });
                     setImagePreview(null);
                   }}
@@ -242,14 +264,18 @@ const CreatePost = () => {
                 </div>
                 <div>
                   <p className="font-bold text-lg">Add a cover image</p>
-                  <p className="text-sm text-zinc-500">Paste a URL or we'll generate one for you</p>
+                  <p className="text-sm text-zinc-500">Click here to choose an image file</p>
                 </div>
-                <input
-                  type="text"
-                  placeholder="https://example.com/image.jpg"
-                  onChange={(e) => setPost({ ...Post, image: e.target.value })}
-                  className="w-full max-w-md px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    imageInputRef.current?.click();
+                  }}
+                  className="px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-sm font-medium"
+                >
+                  Choose file
+                </button>
               </div>
             )}
           </div>
