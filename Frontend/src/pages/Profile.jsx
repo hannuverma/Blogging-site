@@ -161,6 +161,7 @@ const Profile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { users, posts, currentUser, toggleFollow, toggleMute, updateUser } = useBlog();
+  const [fetchedUser, setFetchedUser] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [DeleteAccount, setDeleteAccount] = useState(false);
@@ -192,10 +193,67 @@ const Profile = () => {
     }
   }, [DeleteAccount, deleteAccount]);
 
+    useEffect(() => {
+      if (!userId) {
+        setFetchedUser(null);
+        return;
+      }
+
+      const existing = users.find((u) => String(u.id) === String(userId));
+      if (existing) {
+        setFetchedUser(null);
+        return;
+      }
+
+      const relatedPost = posts.find((p) => String(p.authorId) === String(userId));
+      if (!relatedPost?.id) {
+        setFetchedUser(null);
+        return;
+      }
+
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await api.get('/api/posts/user/', {
+            params: { postId: relatedPost.id },
+          });
+
+          const raw = res.data?.author;
+          if (!raw || cancelled) return;
+
+          setFetchedUser({
+            id: String(raw.id ?? userId),
+            name: raw.username ?? raw.name ?? `User ${userId}`,
+            email: raw.email ?? '',
+            avatar:
+              raw.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(raw.username ?? raw.name ?? `User ${userId}`)}&background=0f172a&color=fff`,
+            followers: Array.isArray(raw.followers) ? raw.followers.map((id) => String(id)) : [],
+            following: Array.isArray(raw.following) ? raw.following.map((id) => String(id)) : [],
+            muted: Array.isArray(raw.muted)
+              ? raw.muted.map((id) => String(id))
+              : Array.isArray(raw.mute)
+              ? raw.mute.map((id) => String(id))
+              : [],
+            createdAt: raw.created_at ?? raw.createdAt ?? relatedPost.createdAt ?? new Date().toISOString(),
+            bio: raw.bio ?? '',
+            location: raw.location ?? '',
+            website: raw.website ?? '',
+          });
+        } catch (error) {
+          if (!cancelled) setFetchedUser(null);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [userId, users, posts]);
+
   const user = useMemo(() => {
     if (!userId) return currentUser;
-    return users.find(u => String(u.id) === String(userId));
-  }, [users, userId, currentUser]);
+      return users.find((u) => String(u.id) === String(userId)) || fetchedUser;
+    }, [users, userId, currentUser, fetchedUser]);
 
   const userPosts = useMemo(() => {
     if (!user) return [];

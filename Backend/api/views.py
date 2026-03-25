@@ -164,6 +164,19 @@ def getDraftPosts(request):
     return Response(serializer.data)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getUserFromPosts(request):
+    postId = request.GET.get('postId')
+    if not postId:
+        return Response({"detail": "postId query parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        post = Post.objects.get(id=postId)
+    except Post.DoesNotExist:
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+    author_serializer = UserSerializer(post.author)
+    return Response({"author": author_serializer.data}, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
