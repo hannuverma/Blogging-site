@@ -43,13 +43,6 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
 
             {currentUser ? (
               <div className="flex items-center gap-4">

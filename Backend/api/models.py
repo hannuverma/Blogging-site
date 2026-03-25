@@ -8,9 +8,9 @@ class User(AbstractUser):
     profilePicture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
-
-
+    REQUIRED_FIELDS = ["username"]  
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    avatar = models.URLField(blank=True, null=True)  # New field for Google profile picture
     def __str__(self):
         return self.username
     
@@ -86,3 +86,30 @@ class Bookmark(models.Model):
         return f"{self.user.username} bookmarked {self.post.title} by {self.post.author.username}"
 
 # Create your models here.
+
+class Mute(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='muted_users')
+    muted_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='muted_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'muted_user')
+
+    def __str__(self):
+        return f"{self.user.username} muted {self.muted_user.username}"
+    
+class Report(models.Model):
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
+    reported_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_received')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reports', null=True, blank=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='reports', null=True, blank=True)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        if self.post:
+            return f"{self.reporter.username} reported {self.reported_user.username} for post '{self.post.title}'"
+        elif self.comment:
+            return f"{self.reporter.username} reported {self.reported_user.username} for comment '{self.comment.content[:20]}...'"
+        else:
+            return f"{self.reporter.username} reported {self.reported_user.username}"

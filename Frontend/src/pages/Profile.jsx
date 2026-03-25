@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useBlog } from '../context/BlogContext';
 import { UserPlus, UserMinus, MessageCircle, Heart, MoreHorizontal, Settings, MapPin, Calendar, Link as LinkIcon } from 'lucide-react';
@@ -10,6 +10,151 @@ import { twMerge } from 'tailwind-merge';
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
+
+const ProfileSettingsModal = memo(function ProfileSettingsModal({
+  open,
+  editData,
+  onClose,
+  onFieldChange,
+  onSubmit,
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/60"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
+          >
+            <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+              <h2 className="text-xl font-bold dark:text-white">Edit Profile</h2>
+              <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+                <MoreHorizontal size={20} className="rotate-45" />
+              </button>
+            </div>
+            <form onSubmit={onSubmit} className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Name</label>
+                <input
+                  type="text"
+                  value={editData.name}
+                  onChange={(e) => onFieldChange('name', e.target.value)}
+                  className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Bio</label>
+                <textarea
+                  value={editData.bio}
+                  onChange={(e) => onFieldChange('bio', e.target.value)}
+                  className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-25 resize-none dark:text-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Avatar URL</label>
+                <input
+                  type="text"
+                  value={editData.avatar}
+                  onChange={(e) => onFieldChange('avatar', e.target.value)}
+                  className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Location</label>
+                  <input
+                    type="text"
+                    value={editData.location}
+                    onChange={(e) => onFieldChange('location', e.target.value)}
+                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Website</label>
+                  <input
+                    type="text"
+                    value={editData.website}
+                    onChange={(e) => onFieldChange('website', e.target.value)}
+                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl transition-all hover:scale-[1.02]"
+              >
+                Save Changes
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+});
+
+const UserPostsSection = memo(function UserPostsSection({ userPosts }) {
+  return (
+    <>
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
+        <h2 className="text-2xl font-bold dark:text-white">Published Stories</h2>
+        <span className="text-sm font-bold text-zinc-500">{userPosts.length} stories</span>
+      </div>
+
+      <div className="space-y-8">
+        {userPosts.map((post) => (
+          <div key={post.id} className="group flex flex-col sm:flex-row gap-6">
+            <Link to={`/post/${post.id}`} className="block w-full sm:w-48 aspect-video sm:aspect-square rounded-2xl overflow-hidden shrink-0">
+              <img
+                src={post.image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=800'}
+                alt={post.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </Link>
+            <div className="flex-1 flex flex-col justify-center">
+              <p className="text-xs font-bold text-black dark:text-white uppercase tracking-widest mb-2">
+                {format(new Date(post.createdAt), 'MMM d, yyyy')}
+              </p>
+              <Link to={`/post/${post.id}`}>
+                <h3 className="text-xl font-bold mb-2 group-hover:underline transition-colors leading-tight line-clamp-2 dark:text-white">
+                  {post.title}
+                </h3>
+                <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mb-4">
+                  {post.description}
+                </p>
+              </Link>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+                  <Heart size={14} />
+                  <span>{post.likes?.length || 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+                  <MessageCircle size={14} />
+                  <span>{post.commentCount || 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {userPosts.length === 0 && (
+          <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+            <p className="text-zinc-500 font-medium">No stories published yet.</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+});
 
 const Profile = () => {
   const { userId } = useParams();
@@ -35,6 +180,12 @@ const Profile = () => {
 
   const isOwnProfile = currentUser?.id === user?.id;
 
+  const openSettings = useCallback(() => setShowSettings(true), []);
+  const closeSettings = useCallback(() => setShowSettings(false), []);
+  const handleFieldChange = useCallback((field, value) => {
+    setEditData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
   useEffect(() => {
     if (isOwnProfile && currentUser) {
       setEditData({
@@ -56,12 +207,15 @@ const Profile = () => {
     );
   }
 
-  const isFollowing = currentUser?.following?.includes(user.id);
+  const isFollowing = useMemo(
+    () => currentUser?.following?.some((id) => String(id) === String(user.id)),
+    [currentUser, user]
+  );
 
   const handleUpdateProfile = (e) => {
     e.preventDefault();
     updateUser(editData);
-    setShowSettings(false);
+    closeSettings();
   };
 
   return (
@@ -81,7 +235,7 @@ const Profile = () => {
               />
               {isOwnProfile && (
                 <button 
-                  onClick={() => setShowSettings(true)}
+                  onClick={openSettings}
                   className="absolute bottom-2 right-2 p-2 bg-white dark:bg-black rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <Settings size={18} />
@@ -116,86 +270,13 @@ const Profile = () => {
         </div>
       </header>
 
-      <AnimatePresence>
-        {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSettings(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
-            >
-              <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
-                <h2 className="text-xl font-bold dark:text-white">Edit Profile</h2>
-                <button onClick={() => setShowSettings(false)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-                  <MoreHorizontal size={20} className="rotate-45" />
-                </button>
-              </div>
-              <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Name</label>
-                  <input
-                    type="text"
-                    value={editData.name}
-                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Bio</label>
-                  <textarea
-                    value={editData.bio}
-                    onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[100px] resize-none dark:text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Avatar URL</label>
-                  <input
-                    type="text"
-                    value={editData.avatar}
-                    onChange={(e) => setEditData({ ...editData, avatar: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Location</label>
-                    <input
-                      type="text"
-                      value={editData.location}
-                      onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-                      className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Website</label>
-                    <input
-                      type="text"
-                      value={editData.website}
-                      onChange={(e) => setEditData({ ...editData, website: e.target.value })}
-                      className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl transition-all hover:scale-[1.02]"
-                >
-                  Save Changes
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ProfileSettingsModal
+        open={showSettings}
+        editData={editData}
+        onClose={closeSettings}
+        onFieldChange={handleFieldChange}
+        onSubmit={handleUpdateProfile}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <aside className="space-y-8">
@@ -226,7 +307,7 @@ const Profile = () => {
               )}
               <div className="flex items-center gap-3 text-sm text-zinc-500">
                 <Calendar size={16} />
-                <span>Joined March 2024</span>
+                <span>Joined {format(new Date(user.createdAt), 'MMM yyyy')}</span>
               </div>
             </div>
           </section>
@@ -246,62 +327,7 @@ const Profile = () => {
         </aside>
 
         <main className="lg:col-span-2 space-y-8">
-          <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
-            <h2 className="text-2xl font-bold dark:text-white">Published Stories</h2>
-            <span className="text-sm font-bold text-zinc-500">{userPosts.length} stories</span>
-          </div>
-
-          <div className="space-y-8">
-            <AnimatePresence mode="popLayout">
-              {userPosts.map((post) => (
-                <motion.div
-                  key={post.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="group flex flex-col sm:flex-row gap-6"
-                >
-                  <Link to={`/post/${post.id}`} className="block w-full sm:w-48 aspect-video sm:aspect-square rounded-2xl overflow-hidden shrink-0">
-                    <img 
-                      src={post.image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=800'} 
-                      alt={post.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                    />
-                  </Link>
-                  <div className="flex-1 flex flex-col justify-center">
-                    <p className="text-xs font-bold text-black dark:text-white uppercase tracking-widest mb-2">
-                      {format(new Date(post.createdAt), 'MMM d, yyyy')}
-                    </p>
-                    <Link to={`/post/${post.id}`}>
-                      <h3 className="text-xl font-bold mb-2 group-hover:underline transition-colors leading-tight line-clamp-2 dark:text-white">
-                        {post.title}
-                      </h3>
-                      <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mb-4">
-                        {post.description}
-                      </p>
-                    </Link>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-                        <Heart size={14} />
-                        <span>{post.likes?.length || 0}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-                        <MessageCircle size={14} />
-                        <span>{post.commentCount || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {userPosts.length === 0 && (
-              <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
-                <p className="text-zinc-500 font-medium">No stories published yet.</p>
-              </div>
-            )}
-          </div>
+          <UserPostsSection userPosts={userPosts} />
         </main>
       </div>
     </div>

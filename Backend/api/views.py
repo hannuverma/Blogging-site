@@ -17,7 +17,7 @@ from django.db.models import Avg
 from rest_framework.exceptions import ValidationError
 from django.views.decorators.cache import cache_page
 from .serializers import PostSerializer, UserSerializer, CommentSerializer, BookmarkSerializer
-from .models import User, Post, Comment, Like, Follow, Bookmark
+from .models import Mute, User, Post, Comment, Like, Follow, Bookmark
 from django.db.models import Q
 from google.oauth2 import id_token
 from google.oauth2 import id_token
@@ -80,15 +80,27 @@ def google_login(request):
     token = request.data.get("token")
 
     try:
+        # Verify the Google Token
         idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
-
         email = idinfo['email']
-        name = idinfo.get('name')
+        name = idinfo.get('name', email.split('@')[0]) # Fallback for name
+        avatar = idinfo.get('picture')
 
-        user, created = User.objects.get_or_create(username=email, defaults={
-            'email': email,
-            'first_name': name
-        })
+        # FIX: Look up by EMAIL, not username
+        # Since Email is your unique identifier, use it as the lookup key.
+        user, created = User.objects.get_or_create(
+            email=email, 
+            defaults={
+                'username': name,
+                'avatar': avatar # Ensure this matches your model field name
+            }
+        )
+
+        # Optional: Update the avatar if the user already existed
+        if not created and avatar:
+            user.profilePicture = avatar
+            user.save()
+
         refresh = RefreshToken.for_user(user)
         return Response({
             "access": str(refresh.access_token),
@@ -97,6 +109,8 @@ def google_login(request):
 
     except ValueError:
         return Response({"error": "Invalid token"}, status=400)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -279,3 +293,55 @@ def DeleteCommentView(request, comment_id):
 
     comment.delete()
     return Response({"detail": "Comment deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def toggleFollow(request):
+    userId = request.data.get('userId')
+    targetUserId = request.data.get('targetUserId')
+
+    if not userId or not targetUserId:
+        return Response({"detail": "Both userId and targetUserId are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if userId == targetUserId:
+        return Response({"detail": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        follow, created = Follow.objects.get_or_create(follower_id=userId, following_id=targetUserId)
+
+        if not created:
+            follow.delete()
+            return Response({"detail": "Unfollowed successfully."}, status=status.HTTP_200_OK)
+
+        return Response({"detail": "Followed successfully."}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def toggleMute(request):
+    userId = request.data.get('userId')
+    targetUserId = request.data.get('targetUserId')
+
+    if not userId or not targetUserId:
+        return Response({"detail": "Both userId and targetUserId are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if userId == targetUserId:
+        return Response({"detail": "You cannot mute yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        mute, created = Mute.objects.get_or_create(user_id=userId, muted_user_id=targetUserId)
+
+        if not created:
+            mute.delete()
+            return Response({"detail": "Unmuted successfully."}, status=status.HTTP_200_OK)
+
+        return Response({"detail": "Muted successfully."}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def toggleReport(request):
+    # Implement report logic here
+    return Response({"detail": "Report functionality not implemented yet."}, status=status.HTTP_501_NOT_IMPLEMENTED)

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from .views import CreateUserView, CreatePostView, UpdatePostView, DeletePostView, RetrievePostView, RetrievePostDetailView,getCategories, CreateCommentView, DeleteCommentView, whoAmI, getUserPosts, getDraftPosts, getUserPost, google_login
-from .views import toggleBookmark, GetAllBookmarks, toggleLike
+from .views import toggleBookmark, GetAllBookmarks, toggleLike, toggleFollow, toggleMute, toggleReport
 
 urlpatterns = [
     path("register/", CreateUserView.as_view(), name="register"),
@@ -21,4 +21,7 @@ urlpatterns = [
     path('bookmarks/create/', toggleBookmark, name='create_bookmark'),
     path('bookmarks/', GetAllBookmarks, name='get_all_bookmarks'),
     path('posts/<int:post_id>/like/', toggleLike, name='toggle_like'),
+    path('users/follow/', toggleFollow, name='toggle_follow'),
+    path('users/mute/', toggleMute, name='toggle_mute'),
+    path('users/report/', toggleReport, name='toggle_report'),
 ]

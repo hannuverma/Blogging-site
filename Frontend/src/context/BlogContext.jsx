@@ -7,6 +7,11 @@ const BlogContext = createContext(undefined);
 
 const normalizeUser = (raw) => {
   if (!raw) return null;
+  const mutedIds = Array.isArray(raw.muted)
+    ? raw.muted
+    : Array.isArray(raw.mute)
+    ? raw.mute
+    : [];
   return {
     id: String(raw.id ?? ''),
     name: raw.username ?? raw.name ?? 'User',
@@ -14,9 +19,10 @@ const normalizeUser = (raw) => {
     avatar: raw.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(raw.username ?? raw.name ?? 'User')}&background=0f172a&color=fff`,
     following: Array.isArray(raw.following) ? raw.following.map((id) => String(id)) : [],
     followers: Array.isArray(raw.followers) ? raw.followers.map((id) => String(id)) : [],
-    muted: Array.isArray(raw.muted) ? raw.muted.map((id) => String(id)) : [],
+    muted: mutedIds.map((id) => String(id)),
     reported: Array.isArray(raw.reported) ? raw.reported.map((id) => String(id)) : [],
     bookmarks: Array.isArray(raw.bookmarks) ? raw.bookmarks.map((id) => String(id)) : [],
+    createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
   };
 };
 
@@ -100,7 +106,7 @@ export const BlogProvider = ({ children }) => {
     localStorage.setItem('vibe-blog-comments', JSON.stringify(comments));
   }, [comments]);
 
-  // Theme logic
+  // Theme logic - Apply immediately on mount and whenever theme changes
   useEffect(() => {
     localStorage.setItem('vibe-blog-theme', theme);
     if (theme === 'dark') {
@@ -109,6 +115,16 @@ export const BlogProvider = ({ children }) => {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // Apply theme immediately on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('vibe-blog-theme') || 'light';
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
@@ -123,7 +139,9 @@ export const BlogProvider = ({ children }) => {
     try {
       const res = await api.get('/api/whoami/');
       const normalized = normalizeUser(res.data);
+      
       setCurrentUser(normalized);
+      console.log('Fetched current user:', res);
       if (normalized) {
         setUsers((prev) => {
           const exists = prev.some((u) => String(u.id) === String(normalized.id));
@@ -336,43 +354,105 @@ export const BlogProvider = ({ children }) => {
     }
   };
 
-  const toggleFollow = (userId) => {
-    if (!currentUser || currentUser.id === userId) return;
-    const isFollowing = currentUser.following.includes(userId);
-    
+  const toggleFollow = async (userId) => {
+    if (!currentUser) return;
+
+    const targetUserId = String(userId);
+    const currentUserId = String(currentUser.id);
+    if (!targetUserId || currentUserId === targetUserId) return;
+
+    const currentFollowing = Array.isArray(currentUser.following)
+      ? currentUser.following.map((id) => String(id))
+      : [];
+    const isFollowing = currentFollowing.includes(targetUserId);
+
     const updatedCurrentUser = {
       ...currentUser,
-      following: isFollowing 
-        ? currentUser.following.filter(id => id !== userId) 
-        : [...currentUser.following, userId]
+      following: isFollowing
+        ? currentFollowing.filter((id) => id !== targetUserId)
+        : [...currentFollowing, targetUserId],
     };
 
+    // Optimistic update so UI reacts immediately.
     setCurrentUser(updatedCurrentUser);
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) return updatedCurrentUser;
-      if (u.id === userId) {
-        return {
-          ...u,
-          followers: isFollowing 
-            ? u.followers.filter(id => id !== currentUser.id) 
-            : [...u.followers, currentUser.id]
-        };
-      }
-      return u;
-    }));
+    setUsers((prev) =>
+      prev.map((u) => {
+        const uid = String(u.id);
+        const followers = Array.isArray(u.followers)
+          ? u.followers.map((id) => String(id))
+          : [];
+
+        if (uid === currentUserId) {
+          return updatedCurrentUser;
+        }
+
+        if (uid === targetUserId) {
+          return {
+            ...u,
+            followers: isFollowing
+              ? followers.filter((id) => id !== currentUserId)
+              : followers.includes(currentUserId)
+              ? followers
+              : [...followers, currentUserId],
+          };
+        }
+
+        return u;
+      })
+    );
+
+    try {
+      await api.post('/api/users/follow/', {
+        userId: currentUserId,
+        targetUserId,
+      });
+      await fetchCurrentUser();
+    } catch (error) {
+      // Revert optimistic update if backend request fails.
+      setCurrentUser(currentUser);
+      setUsers((prev) =>
+        prev.map((u) => (String(u.id) === currentUserId ? currentUser : u))
+      );
+      console.error('Error toggling follow:', error);
+    }
   };
 
-  const toggleMute = (userId) => {
+  const toggleMute = async (userId) => {
+
     if (!currentUser) return;
-    const isMuted = currentUser.muted.includes(userId);
+    const targetUserId = String(userId);
+    const currentUserId = String(currentUser.id);
+    if (!targetUserId || currentUserId === targetUserId) return;
+    
+    const currentMuted = Array.isArray(currentUser.muted)
+      ? currentUser.muted.map((id) => String(id))
+      : [];
+    const isMuted = currentMuted.includes(targetUserId);
     const updatedUser = {
       ...currentUser,
-      muted: isMuted 
-        ? currentUser.muted.filter(id => id !== userId) 
-        : [...currentUser.muted, userId]
+      muted: isMuted
+        ? currentMuted.filter((id) => id !== targetUserId)
+        : [...currentMuted, targetUserId]
     };
     setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    setUsers((prev) =>
+      prev.map((u) => (String(u.id) === currentUserId ? updatedUser : u))
+    );
+
+    try {
+      await api.post('/api/users/mute/', {
+        userId: currentUserId,
+        targetUserId,
+      });
+      await fetchCurrentUser();
+    } catch (error) {
+      // Revert optimistic update if backend request fails.
+      setCurrentUser(currentUser);
+      setUsers((prev) =>
+        prev.map((u) => (String(u.id) === currentUserId ? currentUser : u))
+      );
+      console.error('Error toggling mute:', error);
+    }
   };
 
   const reportUser = (userId) => {
