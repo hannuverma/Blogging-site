@@ -369,9 +369,11 @@ const Profile = () => {
               </button>
               </div>
             )}
-            <button onClick={() => setShowMenu(!showMenu)} className="p-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-500">
-              <MoreHorizontal size={20} />
-            </button>
+            {isOwnProfile && (
+              <button onClick={() => setShowMenu(!showMenu)} className="p-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-500">
+                <MoreHorizontal size={20} />
+              </button>
+            )}
 
             <AnimatePresence>
               {showMenu && (
