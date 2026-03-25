@@ -1,61 +1,76 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBlog } from '../context/BlogContext';
-import { Mail, User, ArrowRight, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { Mail, User, ArrowRight, Lock } from 'lucide-react';
+import { motion } from 'framer-motion'; // Changed from 'motion/react' to 'framer-motion'
 import api from '../api';
-import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
-
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const navigate = useNavigate();
 
-    const handleSuccess = async (credentialResponse: any) => {
+  const handleSuccess = async (credentialResponse) => {
+    try {
       const token = credentialResponse.credential;
-  
-      const res = await api.post("api/auth/google/", {
-        token: token
-      });
+      const res = await api.post("api/auth/google/", { token: token });
 
-      localStorage.setItem("access", res.data.access);
-      localStorage.setItem("refresh", res.data.refresh);
-      navigate('/');
-    };
-  
-
-  const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if(isLogin){
-      const res = await api.post('api/token/', {email: formData.email, password: formData.password});
-      if(res.status === 200){
+      if (res.data?.access) {
         localStorage.setItem("access", res.data.access);
         localStorage.setItem("refresh", res.data.refresh);
         navigate('/');
       }
-      
+    } catch (error) {
+      console.error("Google Auth Error:", error);
+      alert("Google login failed. Please try again.");
     }
-    else{ 
-      try {
-      const res = await api.post('api/user/register/', {username: formData.name, email: formData.email, password: formData.password});
-      if(res.status === 201){
-        const res2 = await api.post('api/token/', {email: formData.email, password: formData.password});
-        localStorage.setItem("access", res2.data.access);
-        localStorage.setItem("refresh", res2.data.refresh);
-        navigate('/');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    try {
+      if (isLogin) {
+        // LOGIN LOGIC
+        const res = await api.post('api/token/', { 
+          email: formData.email, 
+          password: formData.password 
+        });
+        
+        if (res.status === 200) {
+          localStorage.setItem("access", res.data.access);
+          localStorage.setItem("refresh", res.data.refresh);
+          navigate('/');
+        }
+      } else {
+        // REGISTER LOGIC
+        const res = await api.post('api/user/register/', { 
+          username: formData.name, 
+          email: formData.email, 
+          password: formData.password 
+        });
+
+        if (res.status === 201) {
+          // Auto-login after registration
+          const res2 = await api.post('api/token/', { 
+            email: formData.email, 
+            password: formData.password 
+          });
+          localStorage.setItem("access", res2.data.access);
+          localStorage.setItem("refresh", res2.data.refresh);
+          navigate('/');
+        }
       }
     } catch (error) {
-      alert("User with this email already exists. Please try logging in or use a different email.");
+      console.error("Auth Error:", error);
+      const message = error.response?.data?.detail || "Authentication failed. Please check your credentials.";
+      alert(message);
     }
-  }
-  }
+  };
+
   return (
-    <div className="max-w-md mx-auto py-12">
+    <div className="max-w-md mx-auto py-12 px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -65,7 +80,7 @@ const Auth = () => {
           <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-white font-bold text-3xl mx-auto mb-6 shadow-lg shadow-emerald-500/20">
             V
           </div>
-          <h1 className="text-3xl font-black tracking-tight">
+          <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
@@ -85,7 +100,7 @@ const Auth = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="John Doe"
-                  className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
+                  className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium dark:text-white"
                 />
               </div>
             </div>
@@ -101,7 +116,7 @@ const Auth = () => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="john@example.com"
-                className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
+                className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium dark:text-white"
               />
             </div>
           </div>
@@ -116,22 +131,27 @@ const Auth = () => {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
-                className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
+                className="w-full pl-12 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium dark:text-white"
               />
             </div>
           </div>
 
-        <button
-          type="submit"
-          className="w-full py-4 bg-black dark:bg-white text-white dark:text-black font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg group"
-        >
-          {isLogin ? 'Sign In' : 'Sign Up'}
-          <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+          <button
+            type="submit"
+            className="w-full py-4 bg-black dark:bg-white text-white dark:text-black font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg group hover:opacity-90"
+          >
+            {isLogin ? 'Sign In' : 'Sign Up'}
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          <div className="flex justify-center pt-2">
             <GoogleLogin
               onSuccess={handleSuccess}
               onError={() => console.log("Login Failed")}
+              theme="filled_black"
+              shape="pill"
             />
+          </div>
         </form>
 
         <div className="relative py-4">
@@ -145,13 +165,13 @@ const Auth = () => {
 
         <button
           onClick={() => setIsLogin(!isLogin)}
-          className="w-full py-3 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-2xl text-sm font-bold transition-all"
+          className="w-full py-3 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-2xl text-sm font-bold transition-all dark:text-white"
         >
           {isLogin ? 'Create an account' : 'Already have an account?'}
         </button>
 
         <div className="text-center">
-          <p className="text-[10px] text-zinc-400 font-medium leading-relaxed">
+          <p className="text-[10px] text-zinc-400 font-medium leading-relaxed uppercase tracking-tighter">
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>

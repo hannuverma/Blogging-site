@@ -5,147 +5,72 @@ import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import api from '../api';
+import { useBlog } from '../context/BlogContext';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const normalizePost = (raw, commentsLen = 0) => ({
-  id: Number(raw?.id ?? 0),
-  title: raw?.title ?? 'Untitled story',
-  description: raw?.description ?? 'No description provided yet.',
-  content: raw?.content ?? 'No content available.',
-  image: raw?.image || 'https://picsum.photos/seed/post-detail/1200/600',
-  author_id: Number(raw?.author_id ?? 0),
-  author: raw?.author ?? 'Unknown author',
-  authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(raw?.author ?? 'Author')}&background=e2e8f0&color=0f172a`,
-  createdAt: raw?.created_at ?? new Date().toISOString(),
-  likes: Array.isArray(raw?.likes) ? raw.likes.map(id => String(id)) : [],
-  commentCount: typeof raw?.comment_count === 'number' ? raw.comment_count : commentsLen,
-  category: raw?.category ?? 'Other',
-});
-
-const normalizeComment = (raw) => ({
-  id: Number(raw?.id ?? 0),
-  postId: Number(raw?.post ?? 0),
-  authorId: Number(raw?.author_id ?? 0),
-  authorName: raw?.author ?? 'Anonymous',
-  authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(raw?.author ?? 'Anonymous')}&background=f1f5f9&color=0f172a`,
-  content: raw?.content ?? '',
-  createdAt: raw?.created_at ?? new Date().toISOString(),
-});
-
 const PostDetail = () => {
+  const {
+    currentUser,
+    fetchCurrentUser,
+    fetchPostDetail,
+    fetchRelatedPosts,
+    addComment,
+    toggleLike,
+    toggleBookmark,
+    deletePost,
+  } = useBlog();
   const navigate = useNavigate();
   const { id } = useParams();
   const [commentText, setCommentText] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [relatedPosts, setRelatedPosts] = useState([]);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const fetchUser = async () => {
-    setLoading(true)
-    try {
-      const res = await api.get('/api/whoami/');
-      setCurrentUser({
-        id: Number(res.data.id ?? 0),
-        name: res.data.username,
-        email: res.data.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(res.data.username)}&background=0f172a&color=fff`,
-      });
-    } catch (error) {
-      setCurrentUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPostDetail = async () => {
-    setLoading(true);
+  const loadPostDetail = async () => {
     if (!id) return;
-    try {
-      // Try to fetch published post first
-      const res = await api.get(`/api/posts/${id}/`);
-      const normalizedComments = Array.isArray(res.data?.comments)
-        ? res.data.comments.map(normalizeComment)
-        : [];
-      const normalizedPost = normalizePost(res.data?.post, normalizedComments.length);
-      setComments(normalizedComments);
-      setPost(normalizedPost);
-      setLikesCount(normalizedPost.likes.length);
-      if (currentUser) {
-        setIsLiked(normalizedPost.likes.includes(String(currentUser.id)));
-      } else {
-        setIsLiked(false);
-      }
-      setIsBookmarked(false);
-    } catch (publishedError) {
-      // If published post not found, try to fetch user's own post (including drafts)
-      try {
-        const res = await api.get(`/api/user/posts/${id}/`);
-        const normalizedComments = Array.isArray(res.data?.comments)
-          ? res.data.comments.map(normalizeComment)
-          : [];
-        const normalizedPost = normalizePost(res.data?.post, normalizedComments.length);
-        setComments(normalizedComments);
-        setPost(normalizedPost);
-        setLikesCount(normalizedPost.likes.length);
-        if (currentUser) {
-          setIsLiked(normalizedPost.likes.includes(String(currentUser.id)));
-        } else {
-          setIsLiked(false);
-        }
-        setIsBookmarked(false);
-      } catch (draftError) {
-        console.error('Error fetching post detail:', draftError);
-        setPost(null);
-        setComments([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const fetchRelatedPosts = async (current) => {
-    try {
-      const res = await api.get('/api/posts/');
-      const normalized = Array.isArray(res.data)
-        ? res.data.map((p) => normalizePost(p, 0))
-        : [];
-
-      const related = normalized
-        .filter((p) => p.id !== current.id && (p.category === current.category || current.category === 'Other'))
-        .slice(0, 3);
-
-      setRelatedPosts(related);
-    } catch (error) {
-      console.error('Error fetching related posts:', error);
-      setRelatedPosts([]);
-    }
+    const detail = await fetchPostDetail(id);
+    setPost(detail.post);
+    setComments(detail.comments);
+    setLikesCount(detail.post?.likes?.length ?? 0);
+    setIsLiked(Boolean(detail.post && currentUser && detail.post.likes.includes(String(currentUser.id))));
+    setIsBookmarked(Boolean(currentUser?.bookmarks?.includes(String(detail.post?.id))));
   };
 
   useEffect(() => {
     const token = localStorage.getItem('access');
-    if (token) fetchUser();
-    fetchPostDetail();
-  }, [id]);
+    (async () => {
+      if (token) {
+        await fetchCurrentUser();
+      }
+      await loadPostDetail();
+    })();
+  }, [id, fetchCurrentUser, fetchPostDetail]);
 
   useEffect(() => {
     if (post) {
-      fetchRelatedPosts(post);
+      (async () => {
+        const related = await fetchRelatedPosts(post);
+        setRelatedPosts(related);
+      })();
     }
-  }, [post?.id]);
+  }, [post?.id, fetchRelatedPosts]);
 
   useEffect(() => {
     if (post && currentUser) {
       setIsLiked(post.likes.includes(String(currentUser.id)));
     }
   }, [post?.id, currentUser?.id]);
+
+  useEffect(() => {
+    if (post) {
+      setIsBookmarked(Boolean(currentUser?.bookmarks?.includes(String(post.id))));
+    }
+  }, [post?.id, currentUser?.bookmarks]);
 
   if (!post) {
     return (
@@ -158,7 +83,7 @@ const PostDetail = () => {
     );
   }
 
-  const isAuthor = currentUser?.id === post.author_id;
+  const isAuthor = String(currentUser?.id) === String(post.authorId);
 
   const handleCommentSubmit = (e) => {
     e.preventDefault();
@@ -170,10 +95,8 @@ const PostDetail = () => {
       if (!commentText.trim()) return;
 
       try {
-        const res = await api.post(`/api/posts/${post.id}/comments/create/`, {
-          content: commentText,
-        });
-        const newComment = normalizeComment(res.data);
+        const newComment = await addComment(post.id, commentText);
+        if (!newComment) return;
         setComments((prev) => [newComment, ...prev]);
         setPost((prev) => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : prev));
         setCommentText('');
@@ -208,26 +131,33 @@ const PostDetail = () => {
       setLikesCount((count) => alreadyLiked ? Math.max(0, count - 1) : count + 1);
       setIsLiked(!alreadyLiked);
 
-      // Make API call
-      const body = { postId: post.id };
-      await api.post(`/api/posts/${post.id}/like/`, body);
+      await toggleLike(post.id, currentUser.id);
     } catch (error) {
       console.error('Error toggling like:', error);
       // Revert local state on error
       setIsLiked((prev) => !prev);
-      fetchPostDetail();
+      await loadPostDetail();
     }
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked((prev) => !prev);
+  const handleBookmark = async () => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+    try {
+      await toggleBookmark(post.id, currentUser.id);
+      setIsBookmarked((prev) => !prev);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
   };
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;
 
     try {
-      await api.delete(`/api/posts/${post.id}/delete/`);
+      await deletePost(post.id);
       navigate('/');
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -280,12 +210,12 @@ const PostDetail = () => {
         <header className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to={`/profile/${post.author_id}`}>
-                <img src={post.authorAvatar} alt={post.author} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/20" />
+              <Link to={`/profile/${post.authorId}`}>
+                <img src={post.authorAvatar} alt={post.authorName} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/20" />
               </Link>
               <div>
-                <Link to={`/profile/${post.author_id}`} className="text-lg font-bold hover:text-emerald-500 transition-colors">
-                  {post.author}
+                <Link to={`/profile/${post.authorId}`} className="text-lg font-bold hover:text-emerald-500 transition-colors">
+                  {post.authorName}
                 </Link>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {createdAtLabel} • 5 min read
@@ -422,7 +352,7 @@ const PostDetail = () => {
                     <img src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <h4 className="font-bold group-hover:underline transition-colors line-clamp-2">{p.title}</h4>
-                  <p className="text-xs text-zinc-500">{p.author}</p>
+                  <p className="text-xs text-zinc-500">{p.authorName}</p>
                 </Link>
               ))}
             </div>

@@ -1,72 +1,88 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import Navbar from './components/Navbar'
-import ProtectedRoots from './components/ProtectedRoots'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home'; 
-import NotFound from './pages/NotFound';
-import Blog from './pages/Blog';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BlogProvider, useBlog } from './context/BlogContext';
+import Navbar from './components/Navbar';
+import Feed from './pages/Feed';
+import PostDetail from './pages/PostDetail';
 import CreatePost from './pages/CreatePost';
+import Library from './pages/Library';
+import Profile from './pages/Profile';
+import Auth from './pages/Auth';
+import NotFound from './pages/NotFound';
+import ProtectedRoots from './components/ProtectedRoots';
+import Login from './pages/Login';
 
-const Logout = () => {
-  localStorage.clear()
-  return <Navigate to="/" />;
-}
-
-const RegisterAndLogout = () => { 
-  localStorage.clear()
-  return <Register to="/" />;
-}
-
-const AppLayout = ({ theme, onToggleTheme }) => {
+const AppContent = () => {
+  const { theme, currentUser, fetchCurrentUser } = useBlog();
   const location = useLocation();
-  const hideNavbar = useMemo(() => location.pathname === '/login' || location.pathname === '/register', [location.pathname]);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    
+    if (!token) {
+      fetchCurrentUser();
+      setAuthChecked(true);
+      return;
+    }
+
+    (async () => {
+      await fetchCurrentUser();
+      setAuthChecked(true);
+    })();
+  }, [location.pathname, fetchCurrentUser]);
+
+  // Optional: Prevent flicker while checking auth on initial load
+  if (!authChecked) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+        <div className="animate-pulse text-emerald-500 font-bold">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_34%)]" />
-      <div className="relative z-10">
-        {!hideNavbar && <Navbar theme={theme} onToggleTheme={onToggleTheme} />}
-        <main className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 lg:px-8">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<RegisterAndLogout />} />
-            <Route path="/logout" element={<Logout />} />
-            <Route path="/blog/:id" element={<Blog />} />
-            <Route path="/create-post" element={<ProtectedRoots><CreatePost /></ProtectedRoots>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-      </div>
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black'}`}>
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Routes>
+          <Route path="/" element={<Feed />} />
+          <Route path="/post/:id" element={<PostDetail />} />
+          
+          {/* Redirect to home if user is already logged in and tries to access /auth */}
+          <Route 
+            path="/auth" 
+            element={currentUser ? <Navigate to="/" /> : <Auth />} 
+          />
+          
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected Routes */}
+          <Route path="/create" element={<ProtectedRoots><CreatePost /></ProtectedRoots>} />
+          <Route path="/edit/:id" element={<ProtectedRoots><CreatePost /></ProtectedRoots>} />
+          <Route path="/library" element={<ProtectedRoots><Library /></ProtectedRoots>} />
+          <Route path="/profile" element={<ProtectedRoots><Profile /></ProtectedRoots>} />
+          <Route path="/profile/:userId" element={<ProtectedRoots><Profile /></ProtectedRoots>} />
+          
+          {/* Fallback */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
     </div>
   );
 };
 
-const App = () => {
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      return savedTheme;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const onToggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
-  };
-
+export default function App() {
   return (
-    <BrowserRouter>
-      <AppLayout theme={theme} onToggleTheme={onToggleTheme} />
-    </BrowserRouter>
-  )
+    <BlogProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </BlogProvider>
+  );
 }
-
-export default App

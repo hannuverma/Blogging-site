@@ -1,71 +1,22 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, Bookmark, Heart, MessageCircle, MoreHorizontal, UserPlus, UserMinus, EyeOff, Flag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Heart, MessageCircle, MoreHorizontal, UserPlus, UserMinus, EyeOff, Flag, Bookmark } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
-import { Post, User } from '../types';
 import { formatDistanceToNow } from 'date-fns';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion'; // Using standard framer-motion
 import { Link, useNavigate } from 'react-router-dom';
-import { clsx, type ClassValue } from 'clsx';
+import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import api from '../api';
-import { useLocation } from 'react-router-dom';
 
-function cn(...inputs: ClassValue[]) {
+function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const PostCard: React.FC<{ post: Post }> = ({ post: initialPost }) => {
-  const {toggleLike, toggleBookmark, toggleFollow, toggleMute, reportUser } = useBlog();
+const PostCard = ({ post: initialPost, currentUser }) => {
+  const { toggleLike, toggleBookmark, toggleFollow, toggleMute, reportUser, fetchCurrentUser } = useBlog();
   const [showMenu, setShowMenu] = useState(false);
   const [post, setPost] = useState(initialPost);
+  
   const navigate = useNavigate();
-
-  const location = useLocation();
-    type User = {
-  name: string;
-  email: string;
-  avatar: string;
-  id: string;
-  bookmarks: string[];
-  following: string[];
-  muted: string[];
-};
-
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const handleLogout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    fetchUser();
-    navigate('/');
-  };
-
-  const fetchUser = async () => {
-    try {
-      const res = await api.get("/api/whoami/");
-      setCurrentUser({
-        name: res.data.username,
-        email: res.data.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(res.data.username)}&background=0f172a&color=fff`,
-        id: String(res.data.id),
-        bookmarks: Array.isArray(res.data.bookmarks) ? res.data.bookmarks.map((bookmarkId: number | string) => String(bookmarkId)) : [],
-        following: [],
-        muted: [],
-
-      });
-    } catch (error) {
-      setCurrentUser(null);
-    }
-  };
- useEffect(() => {
-  const token = localStorage.getItem("access");
-
-  if (!token) {
-    setCurrentUser(null);
-    return;
-  }
-
-    fetchUser();
-  }, [location.pathname]);
 
   useEffect(() => {
     setPost(initialPost);
@@ -81,20 +32,9 @@ const PostCard: React.FC<{ post: Post }> = ({ post: initialPost }) => {
       navigate('/auth');
       return;
     }
-
     try {
       await toggleBookmark(post.id, currentUser.id);
-      setCurrentUser((prev) => {
-        if (!prev) return prev;
-        const postId = String(post.id);
-        const alreadyBookmarked = prev.bookmarks.includes(postId);
-        return {
-          ...prev,
-          bookmarks: alreadyBookmarked
-            ? prev.bookmarks.filter((id) => id !== postId)
-            : [...prev.bookmarks, postId],
-        };
-      });
+      await fetchCurrentUser();
     } catch (error) {
       console.error('Error toggling bookmark:', error);
     }
@@ -105,12 +45,10 @@ const PostCard: React.FC<{ post: Post }> = ({ post: initialPost }) => {
       navigate('/auth');
       return;
     }
-
     try {
       const userId = String(currentUser.id);
       const alreadyLiked = post.likes.includes(userId);
       
-      // Update local state immediately
       setPost((prev) => ({
         ...prev,
         likes: alreadyLiked
@@ -118,11 +56,9 @@ const PostCard: React.FC<{ post: Post }> = ({ post: initialPost }) => {
           : [...prev.likes, userId],
       }));
 
-      // Make API call
       await toggleLike(post.id, currentUser.id);
     } catch (error) {
       console.error('Error toggling like:', error);
-      // Revert local state on error
       setPost(initialPost);
     }
   };
@@ -262,61 +198,27 @@ const PostCard: React.FC<{ post: Post }> = ({ post: initialPost }) => {
   );
 };
 
-const Feed: React.FC = () => {
-  const [Posts, setPosts] = useState<Post[]>([]);
+const Feed = () => {
+  const { posts, currentUser, fetchCurrentUser, fetchCategories, fetchPosts, isFetchingPosts } = useBlog();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeCategory, setActiveCategory] = useState('All');
-  type category = {
-  value: string;
-  label: string;
-  };
-    const [categories, setCategories] = useState<[string, string][]>([]);
-    const fetchCategories = async () => {
-        try {
-            const response = await api.get('/api/categories/');
-            setCategories(response.data);
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        }
-    };
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-  const body = {
-    category: activeCategory,
-    search: searchQuery // Move it here
-  };
-  const fetchPosts = async () => {
-    try {
-      const response = await api.post('/api/posts/', body);
-
-      const normalizedPosts: Post[] = response.data.map((post: any) => ({
-        id: String(post.id),
-        title: post.title ?? '',
-        description: post.description ?? '',
-        content: post.content ?? '',
-        image: post.image ?? 'https://picsum.photos/seed/default/1200/600',
-        category: post.category ?? 'Other',
-        authorId: String(post.author_id ?? ''),
-        authorName: post.author ?? 'Unknown author',
-        authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author ?? 'User')}&background=e2e8f0&color=0f172a`,
-        published: Boolean(post.published),
-        createdAt: post.created_at ?? new Date().toISOString(),
-        likes: Array.isArray(post.likes) ? post.likes.map((id: string | number) => String(id)) : [],
-        commentCount: typeof post.commentCount === 'number' ? post.commentCount : 0,
-        isBookmarked: Boolean(post.is_bookmarked)
-      }));
-      
-      setPosts(normalizedPosts);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-    }
-  };
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetchPosts();
-  }, [activeCategory, searchQuery]);
+    (async () => {
+      const data = await fetchCategories();
+      setCategories(data);
+
+      if (localStorage.getItem('access')) {
+        await fetchCurrentUser();
+      }
+    })();
+  }, [fetchCategories, fetchCurrentUser]);
+
+  useEffect(() => {
+    fetchPosts({ category: activeCategory, search: searchQuery });
+  }, [activeCategory, searchQuery, fetchPosts]);
 
   return (
     <div className="space-y-8">
@@ -376,19 +278,19 @@ const Feed: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <AnimatePresence mode="popLayout">
-          {Posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} currentUser={currentUser} />
           ))}
         </AnimatePresence>
       </div>
 
-      {Posts.length === 0 && (
+      {posts.length === 0 && (
         <div className="text-center py-20 bg-white dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
           <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="text-zinc-400" size={24} />
           </div>
-          <h3 className="text-lg font-semibold mb-1">No stories found</h3>
-          <p className="text-zinc-500 dark:text-zinc-400">Try adjusting your search or filters to find what you're looking for.</p>
+          <h3 className="text-lg font-semibold mb-1">{isFetchingPosts ? 'Loading stories...' : 'No stories found'}</h3>
+          <p className="text-zinc-500 dark:text-zinc-400">{isFetchingPosts ? 'Fetching the latest stories now.' : "Try adjusting your search or filters to find what you're looking for."}</p>
         </div>
       )}
     </div>

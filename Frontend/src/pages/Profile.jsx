@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useBlog } from '../context/BlogContext';
-import { UserPlus, UserMinus, MessageCircle, Heart, Bookmark, MoreHorizontal, Settings, MapPin, Calendar, Link as LinkIcon } from 'lucide-react';
+import { UserPlus, UserMinus, MessageCircle, Heart, MoreHorizontal, Settings, MapPin, Calendar, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion'; // Using standard framer-motion
+import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-function cn(...inputs: ClassValue[]) {
+function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const Profile: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
-  const { users, posts, currentUser, toggleFollow, updateUser, theme } = useBlog();
+const Profile = () => {
+  const { userId } = useParams();
+  const { users, posts, currentUser, toggleFollow, updateUser } = useBlog();
   const [showSettings, setShowSettings] = useState(false);
   const [editData, setEditData] = useState({
     name: '',
@@ -25,12 +25,12 @@ const Profile: React.FC = () => {
 
   const user = useMemo(() => {
     if (!userId) return currentUser;
-    return users.find(u => u.id === userId);
+    return users.find(u => String(u.id) === String(userId));
   }, [users, userId, currentUser]);
 
   const userPosts = useMemo(() => {
     if (!user) return [];
-    return posts.filter(p => p.authorId === user.id && p.published);
+    return posts.filter(p => String(p.authorId) === String(user.id) && p.published);
   }, [posts, user]);
 
   const isOwnProfile = currentUser?.id === user?.id;
@@ -38,9 +38,9 @@ const Profile: React.FC = () => {
   useEffect(() => {
     if (isOwnProfile && currentUser) {
       setEditData({
-        name: currentUser.name,
+        name: currentUser.name || '',
         bio: currentUser.bio || '',
-        avatar: currentUser.avatar,
+        avatar: currentUser.avatar || '',
         location: currentUser.location || '',
         website: currentUser.website || ''
       });
@@ -56,9 +56,9 @@ const Profile: React.FC = () => {
     );
   }
 
-  const isFollowing = currentUser?.following.includes(user.id);
+  const isFollowing = currentUser?.following?.includes(user.id);
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = (e) => {
     e.preventDefault();
     updateUser(editData);
     setShowSettings(false);
@@ -89,8 +89,8 @@ const Profile: React.FC = () => {
               )}
             </div>
             <div className="pb-2">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1">{user.name}</h1>
-              <p className="text-zinc-500 dark:text-zinc-400 font-medium">@{user.email.split('@')[0]}</p>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1 dark:text-white">{user.name}</h1>
+              <p className="text-zinc-500 dark:text-zinc-400 font-medium">@{user.email?.split('@')[0]}</p>
             </div>
           </div>
 
@@ -118,7 +118,7 @@ const Profile: React.FC = () => {
 
       <AnimatePresence>
         {showSettings && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -130,10 +130,10 @@ const Profile: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
-                <h2 className="text-xl font-bold">Edit Profile</h2>
+                <h2 className="text-xl font-bold dark:text-white">Edit Profile</h2>
                 <button onClick={() => setShowSettings(false)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
                   <MoreHorizontal size={20} className="rotate-45" />
                 </button>
@@ -145,7 +145,7 @@ const Profile: React.FC = () => {
                     type="text"
                     value={editData.name}
                     onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
@@ -153,7 +153,7 @@ const Profile: React.FC = () => {
                   <textarea
                     value={editData.bio}
                     onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-25 resize-none"
+                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[100px] resize-none dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
@@ -162,7 +162,7 @@ const Profile: React.FC = () => {
                     type="text"
                     value={editData.avatar}
                     onChange={(e) => setEditData({ ...editData, avatar: e.target.value })}
-                    className="w-full px-4 py-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -172,7 +172,7 @@ const Profile: React.FC = () => {
                       type="text"
                       value={editData.location}
                       onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-                      className="w-full px-4 py-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -181,7 +181,7 @@ const Profile: React.FC = () => {
                       type="text"
                       value={editData.website}
                       onChange={(e) => setEditData({ ...editData, website: e.target.value })}
-                      className="w-full px-4 py-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
                     />
                   </div>
                 </div>
@@ -200,7 +200,7 @@ const Profile: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <aside className="space-y-8">
           <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-4">About</h3>
+            <h3 className="text-lg font-bold mb-4 dark:text-white">About</h3>
             <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed mb-6">
               {user.bio || "No bio yet. This user is a bit mysterious."}
             </p>
@@ -214,7 +214,14 @@ const Profile: React.FC = () => {
               {user.website && (
                 <div className="flex items-center gap-3 text-sm text-zinc-500">
                   <LinkIcon size={16} />
-                  <a href={user.website.startsWith('http') ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="text-black dark:text-white font-bold hover:underline">{user.website}</a>
+                  <a 
+                    href={user.website.startsWith('http') ? user.website : `https://${user.website}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-black dark:text-white font-bold hover:underline"
+                  >
+                    {user.website}
+                  </a>
                 </div>
               )}
               <div className="flex items-center gap-3 text-sm text-zinc-500">
@@ -227,11 +234,11 @@ const Profile: React.FC = () => {
           <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <p className="text-2xl font-black">{user.followers.length}</p>
+                <p className="text-2xl font-black dark:text-white">{user.followers?.length || 0}</p>
                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Followers</p>
               </div>
               <div>
-                <p className="text-2xl font-black">{user.following.length}</p>
+                <p className="text-2xl font-black dark:text-white">{user.following?.length || 0}</p>
                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Following</p>
               </div>
             </div>
@@ -240,7 +247,7 @@ const Profile: React.FC = () => {
 
         <main className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
-            <h2 className="text-2xl font-bold">Published Stories</h2>
+            <h2 className="text-2xl font-bold dark:text-white">Published Stories</h2>
             <span className="text-sm font-bold text-zinc-500">{userPosts.length} stories</span>
           </div>
 
@@ -256,14 +263,18 @@ const Profile: React.FC = () => {
                   className="group flex flex-col sm:flex-row gap-6"
                 >
                   <Link to={`/post/${post.id}`} className="block w-full sm:w-48 aspect-video sm:aspect-square rounded-2xl overflow-hidden shrink-0">
-                    <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img 
+                      src={post.image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=800'} 
+                      alt={post.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
                   </Link>
                   <div className="flex-1 flex flex-col justify-center">
                     <p className="text-xs font-bold text-black dark:text-white uppercase tracking-widest mb-2">
                       {format(new Date(post.createdAt), 'MMM d, yyyy')}
                     </p>
                     <Link to={`/post/${post.id}`}>
-                      <h3 className="text-xl font-bold mb-2 group-hover:underline transition-colors leading-tight line-clamp-2">
+                      <h3 className="text-xl font-bold mb-2 group-hover:underline transition-colors leading-tight line-clamp-2 dark:text-white">
                         {post.title}
                       </h3>
                       <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mb-4">
@@ -273,11 +284,11 @@ const Profile: React.FC = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
                         <Heart size={14} />
-                        <span>{post.likes.length}</span>
+                        <span>{post.likes?.length || 0}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
                         <MessageCircle size={14} />
-                        <span>{post.commentCount}</span>
+                        <span>{post.commentCount || 0}</span>
                       </div>
                     </div>
                   </div>
