@@ -14,6 +14,7 @@ function cn(...inputs) {
 const PostDetail = () => {
   const {
     posts,
+    comments: allComments,
     currentUser,
     fetchCurrentUser,
     fetchPostDetail,
@@ -27,7 +28,6 @@ const PostDetail = () => {
   const { id } = useParams();
   const [commentText, setCommentText] = useState('');
   const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
   const [relatedPosts, setRelatedPosts] = useState([]);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -52,7 +52,6 @@ const PostDetail = () => {
 
     const detail = await fetchPostDetail(id);
     setPost(detail.post);
-    setComments(detail.comments);
     setLikesCount(detail.post?.likes?.length ?? 0);
     setIsLiked(Boolean(detail.post && currentUser && detail.post.likes.includes(String(currentUser.id))));
     setIsBookmarked(Boolean(currentUser?.bookmarks?.includes(String(detail.post?.id))));
@@ -71,7 +70,7 @@ const PostDetail = () => {
       }
       await Promise.allSettled(tasks);
     })();
-  }, [id, fetchCurrentUser, fetchPostDetail, posts]);
+  }, [id, fetchCurrentUser, fetchPostDetail]);
 
   useEffect(() => {
     if (post) {
@@ -127,7 +126,6 @@ const PostDetail = () => {
       try {
         const newComment = await addComment(post.id, commentText);
         if (!newComment) return;
-        setComments((prev) => [newComment, ...prev]);
         setPost((prev) => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : prev));
         setCommentText('');
       } catch (error) {
@@ -195,12 +193,14 @@ const PostDetail = () => {
     }
   };
 
-  const postComments = comments;
+  const postComments = allComments.filter(
+    (comment) => String(comment.postId) === String(post?.id ?? id)
+  );
   const postBody = post.content.trim().length > 0 ? post.content : 'No content available.';
   const safeImage = post.image || 'https://picsum.photos/seed/post-fallback/1200/600';
   const createdAtLabel = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
   const paragraphs = postBody.split('\n').filter((p) => p.trim().length > 0);
-  const commentCountLabel = post.commentCount ?? postComments.length;
+  const commentCountLabel = Math.max(post.commentCount ?? 0, postComments.length);
 
   const related = relatedPosts.length > 0
     ? relatedPosts

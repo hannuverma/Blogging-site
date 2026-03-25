@@ -173,7 +173,6 @@ def whoAmI(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response({"detail": "Not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
 
-@cache_page(60 * 15)
 @api_view(['POST', 'GET'])
 @permission_classes([AllowAny])
 def RetrievePostView(request):
@@ -216,7 +215,6 @@ def SearchPosts(request):
     serializer = PostSerializer(posts, many=True)
     return Response(serializer.data)
 
-@cache_page(60 * 10)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def RetrievePostDetailView(request, post_id):
