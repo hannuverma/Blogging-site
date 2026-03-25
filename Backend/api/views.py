@@ -74,6 +74,14 @@ def toggleBookmark(request,):
     serializer = BookmarkSerializer(bookmark)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def DeleteUserView(request):
+    user = request.user
+    user.delete()
+    return Response({"detail": "User account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def google_login(request):

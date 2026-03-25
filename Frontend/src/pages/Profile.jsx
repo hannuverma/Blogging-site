@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useBlog } from '../context/BlogContext';
-import { UserPlus, UserMinus, MessageCircle, Heart, MoreHorizontal, Settings, MapPin, Calendar, Link as LinkIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { UserPlus, UserMinus, MessageCircle, Heart, MoreHorizontal, Settings, MapPin, Calendar, Link as LinkIcon, EyeOff, Flag, Eye} from 'lucide-react';
+import { format, set } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion'; // Using standard framer-motion
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-
+import api from '../api';
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
@@ -37,6 +37,7 @@ const ProfileSettingsModal = memo(function ProfileSettingsModal({
           >
             <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
               <h2 className="text-xl font-bold dark:text-white">Edit Profile</h2>
+              
               <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
                 <MoreHorizontal size={20} className="rotate-45" />
               </button>
@@ -158,8 +159,25 @@ const UserPostsSection = memo(function UserPostsSection({ userPosts }) {
 
 const Profile = () => {
   const { userId } = useParams();
-  const { users, posts, currentUser, toggleFollow, updateUser } = useBlog();
+  const navigate = useNavigate();
+  const { users, posts, currentUser, toggleFollow, toggleMute, updateUser } = useBlog();
   const [showSettings, setShowSettings] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [DeleteAccount, setDeleteAccount] = useState(false);
+  const deleteAccount = useCallback( async () => {
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      try{
+        console.log("Attempting to delete account...");
+        await api.delete('/api/users/delete/');
+      }catch(err){
+        alert("Error deleting account: " + (err.response?.data?.detail || err.message));
+        return;
+      }
+      // On success:
+      alert("Account deleted successfully.");
+      // Redirect to home or login page
+    }
+  }, []);
   const [editData, setEditData] = useState({
     name: '',
     bio: '',
@@ -167,6 +185,12 @@ const Profile = () => {
     location: '',
     website: ''
   });
+
+    useEffect(() => {
+    if (DeleteAccount) {
+      deleteAccount();
+    }
+  }, [DeleteAccount, deleteAccount]);
 
   const user = useMemo(() => {
     if (!userId) return currentUser;
@@ -212,11 +236,25 @@ const Profile = () => {
     [currentUser, user]
   );
 
+  const isMuted = useMemo(
+    () => currentUser?.muted?.some((id) => String(id) === String(user.id)),
+    [currentUser, user]
+  );
+
   const handleUpdateProfile = (e) => {
     e.preventDefault();
     updateUser(editData);
     closeSettings();
   };
+
+  const openConnections = useCallback(
+    (section) => {
+      const base = userId ? `/profile/${userId}/connections` : '/profile/connections';
+      navigate(`${base}/${section}`);
+      setShowMenu(false);
+    },
+    [navigate, userId]
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-12">
@@ -250,22 +288,86 @@ const Profile = () => {
 
           <div className="flex items-center gap-3 pb-2">
             {!isOwnProfile && currentUser && (
+              <div className="flex items-center gap-2">
+              <button
+                onClick={() => toggleMute(user.id)}
+                className={cn(
+                  "px-8 py-2.5 rounded-full font-bold transition-all flex items-center gap-2 shadow-lg",
+                  isMuted 
+                    ? "bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800" 
+                    : "bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200"
+                )}
+              >
+                {isMuted ? <Eye size={18} /> : <EyeOff size={18} />}
+                {isMuted ? 'Unmute' : 'Mute'}
+              </button>
               <button
                 onClick={() => toggleFollow(user.id)}
                 className={cn(
                   "px-8 py-2.5 rounded-full font-bold transition-all flex items-center gap-2 shadow-lg",
                   isFollowing 
-                    ? "bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white" 
-                    : "bg-black dark:bg-white text-white dark:text-black"
+                    ? "bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800" 
+                    : "bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800  dark:hover:bg-zinc-200"
                 )}
               >
                 {isFollowing ? <UserMinus size={18} /> : <UserPlus size={18} />}
                 {isFollowing ? 'Unfollow' : 'Follow'}
               </button>
+              </div>
             )}
-            <button className="p-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-500">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-500">
               <MoreHorizontal size={20} />
             </button>
+
+            <AnimatePresence>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => {
+                        openConnections('followers');
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-green-300 "
+                    >
+                      All Followers
+                    </button>
+                     <button
+                      onClick={() => {
+                        openConnections('following');
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-blue-400 "
+                    >
+                      All Following
+                    </button>
+                    <button
+                      onClick={() => {
+                        openConnections('muted');
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-amber-500"
+                    >
+                      <EyeOff size={16} />
+                      Muted Authors
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteAccount(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-red-500"
+                    >
+                      <Flag size={16} />
+                      DELETE ACCOUNT
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>

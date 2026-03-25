@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, MessageCircle, MoreHorizontal, UserPlus, UserMinus, EyeOff, Flag, Bookmark } from 'lucide-react';
+import { Search, Heart, MessageCircle, MoreHorizontal, UserPlus, UserMinus, EyeOff, Flag, Bookmark, Eye   } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion'; // Using standard framer-motion

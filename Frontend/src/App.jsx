@@ -12,6 +12,7 @@ import PostDetail from './pages/PostDetail';
 import CreatePost from './pages/CreatePost';
 import Library from './pages/Library';
 import Profile from './pages/Profile';
+import Connections from './pages/Connections';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
 import ProtectedRoots from './components/ProtectedRoots';
@@ -68,6 +69,8 @@ const AppContent = () => {
           <Route path="/library" element={<ProtectedRoots><Library /></ProtectedRoots>} />
           <Route path="/profile" element={<ProtectedRoots><Profile /></ProtectedRoots>} />
           <Route path="/profile/:userId" element={<ProtectedRoots><Profile /></ProtectedRoots>} />
+          <Route path="/profile/connections/:section" element={<ProtectedRoots><Connections /></ProtectedRoots>} />
+          <Route path="/profile/:userId/connections/:section" element={<ProtectedRoots><Connections /></ProtectedRoots>} />
           
           {/* Fallback */}
           <Route path="*" element={<NotFound />} />
