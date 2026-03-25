@@ -240,6 +240,7 @@ const Profile = () => {
             location: raw.location ?? '',
             website: raw.website ?? '',
           });
+          console.log("Fetched user from posts:", raw);
         } catch (error) {
           if (!cancelled) setFetchedUser(null);
         }
@@ -280,23 +281,14 @@ const Profile = () => {
     }
   }, [isOwnProfile, currentUser]);
 
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <h2 className="text-2xl font-bold mb-4">User not found</h2>
-        <Link to="/" className="text-emerald-500 hover:underline">Back to feed</Link>
-      </div>
-    );
-  }
-
   const isFollowing = useMemo(
-    () => currentUser?.following?.some((id) => String(id) === String(user.id)),
-    [currentUser, user]
+    () => currentUser?.following?.some((id) => String(id) === String(user?.id)) ?? false,
+    [currentUser, user?.id]
   );
 
   const isMuted = useMemo(
-    () => currentUser?.muted?.some((id) => String(id) === String(user.id)),
-    [currentUser, user]
+    () => currentUser?.muted?.some((id) => String(id) === String(user?.id)) ?? false,
+    [currentUser, user?.id]
   );
 
   const handleUpdateProfile = (e) => {
@@ -313,6 +305,15 @@ const Profile = () => {
     },
     [navigate, userId]
   );
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-2xl font-bold mb-4">User not found</h2>
+        <Link to="/" className="text-emerald-500 hover:underline">Back to feed</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-10 sm:space-y-12">
