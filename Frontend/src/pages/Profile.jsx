@@ -199,12 +199,6 @@ const Profile = () => {
         return;
       }
 
-      const existing = users.find((u) => String(u.id) === String(userId));
-      if (existing) {
-        setFetchedUser(null);
-        return;
-      }
-
       const relatedPost = posts.find((p) => String(p.authorId) === String(userId));
       if (!relatedPost?.id) {
         setFetchedUser(null);
@@ -253,8 +247,9 @@ const Profile = () => {
 
   const user = useMemo(() => {
     if (!userId) return currentUser;
-      return users.find((u) => String(u.id) === String(userId)) || fetchedUser;
-    }, [users, userId, currentUser, fetchedUser]);
+    const existing = users.find((u) => String(u.id) === String(userId));
+    return fetchedUser || existing;
+  }, [users, userId, currentUser, fetchedUser]);
 
   const userPosts = useMemo(() => {
     if (!user) return [];

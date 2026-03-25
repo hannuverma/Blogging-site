@@ -53,6 +53,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     author = serializers.ReadOnlyField(source='author.username')
     author_id = serializers.ReadOnlyField(source='author.id')
+    author_avatar = serializers.ReadOnlyField(source='author.avatar')
     commentCount = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
 
@@ -65,7 +66,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ("id", "title", "content", "description", "author", "author_id", "created_at", "updated_at", "image", "published", "category", "commentCount", "likes")
+        fields = ("id", "title", "content", "description", "author", "author_id", "author_avatar", "created_at", "updated_at", "image", "published", "category", "commentCount", "likes")
         extra_kwargs = {"author": {"read_only": True}, "created_at": {"read_only": True}, "updated_at": {"read_only": True}}
 
 

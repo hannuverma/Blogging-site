@@ -35,7 +35,10 @@ const normalizePost = (post) => ({
   category: post?.category ?? 'Other',
   authorId: String(post?.author_id ?? post?.authorId ?? ''),
   authorName: post?.author ?? post?.authorName ?? 'Unknown author',
-  authorAvatar: post?.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post?.author ?? post?.authorName ?? 'User')}&background=e2e8f0&color=0f172a`,
+  authorAvatar:
+    post?.author_avatar ??
+    post?.authorAvatar ??
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(post?.author ?? post?.authorName ?? 'User')}&background=e2e8f0&color=0f172a`,
   published: Boolean(post?.published),
   createdAt: post?.created_at ?? post?.createdAt ?? new Date().toISOString(),
   likes: Array.isArray(post?.likes) ? post.likes.map((id) => String(id)) : [],
