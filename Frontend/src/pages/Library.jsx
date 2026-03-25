@@ -243,7 +243,7 @@ const Library = () => {
   }, [activeTab, posts, bookmarkedPosts, searchQuery, currentUser]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-5xl px-2 sm:px-4 py-6 sm:py-8 space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Your Library</h1>
@@ -267,13 +267,13 @@ const Library = () => {
         </div>
       </header>
 
-      <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-px">
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-zinc-200 dark:border-zinc-800 pb-px scrollbar-hide">
         {['all', 'published', 'drafts', 'bookmarks'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "px-6 py-4 text-sm font-bold capitalize transition-all relative",
+              "px-4 sm:px-6 py-4 text-sm font-bold capitalize transition-all relative whitespace-nowrap",
               activeTab === tab ? "text-black dark:text-white" : "text-zinc-500 hover:text-zinc-900"
             )}
           >                                                                                                                                                                                                                                                        

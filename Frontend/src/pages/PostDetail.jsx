@@ -227,7 +227,7 @@ const PostDetail = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-4xl mx-auto"
+      className="mx-auto max-w-4xl"
     >
       <button
         onClick={handleBack}
@@ -237,9 +237,9 @@ const PostDetail = () => {
         <span className="text-sm font-medium">Back</span>
       </button>
 
-      <article className="space-y-8">
+      <article className="space-y-6 sm:space-y-8">
         <header className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-4">
               <Link to={`/profile/${post.authorId}`}>
                 <img src={post.authorAvatar} alt={post.authorName} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/20" />
@@ -272,10 +272,10 @@ const PostDetail = () => {
             )}
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl">
             {post.title}
           </h1>
-          <p className="text-xl text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed italic">
+          <p className="text-base font-medium italic leading-relaxed text-zinc-600 dark:text-zinc-400 sm:text-xl">
             {post.description}
           </p>
         </header>
@@ -290,9 +290,9 @@ const PostDetail = () => {
           ))}
         </div>
 
-        <footer className="pt-12 border-t border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center gap-8">
+        <footer className="border-t border-zinc-200 pt-8 dark:border-zinc-800 sm:pt-12">
+          <div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-5 sm:gap-8">
               <button
                 onClick={handleLike}
                 className={cn(
@@ -309,7 +309,7 @@ const PostDetail = () => {
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button
                 onClick={handleBookmark}
                 className={cn(
@@ -325,12 +325,12 @@ const PostDetail = () => {
             </div>
           </div>
 
-          <section id="comments" className="mt-12 space-y-8">
+          <section id="comments" className="mt-10 space-y-6 sm:mt-12 sm:space-y-8">
             <h3 className="text-2xl font-bold">Comments ({postComments.length})</h3>
             
-            <form onSubmit={handleCommentSubmit} className="flex gap-4 items-start">
+            <form onSubmit={handleCommentSubmit} className="flex flex-col items-start gap-4 sm:flex-row">
               <img src={currentUser?.avatar || 'https://picsum.photos/seed/guest/200'} alt="Your avatar" className="w-10 h-10 rounded-full object-cover shrink-0" />
-              <div className="flex-1 space-y-4">
+              <div className="w-full flex-1 space-y-4">
                 <textarea
                   value={commentText}
                   onChange={handleCommentTextareaChange}
@@ -340,7 +340,7 @@ const PostDetail = () => {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black font-bold rounded-full transition-all flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-full bg-black px-6 py-2 font-bold text-white transition-all dark:bg-white dark:text-black"
                   >
                     <Send size={18} /> Post Comment
                   </button>
@@ -374,7 +374,7 @@ const PostDetail = () => {
             </div>
           </section>
 
-          <section className="mt-20 space-y-8">
+          <section className="mt-14 space-y-6 sm:mt-20 sm:space-y-8">
             <h3 className="text-2xl font-bold">Related Stories</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {related.map((p) => (

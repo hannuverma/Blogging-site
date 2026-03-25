@@ -69,7 +69,7 @@ const ProfileSettingsModal = memo(function ProfileSettingsModal({
                   className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Location</label>
                   <input
@@ -257,19 +257,19 @@ const Profile = () => {
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12">
+    <div className="mx-auto max-w-5xl space-y-10 sm:space-y-12">
       <header className="relative">
         <div className="h-48 md:h-64 bg-black dark:bg-white rounded-3xl overflow-hidden shadow-2xl">
           <div className="absolute inset-0 bg-white/10 dark:bg-black/10 backdrop-blur-[2px]" />
         </div>
 
-        <div className="px-8 -mt-16 md:-mt-20 flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-end gap-6">
+        <div className="px-3 sm:px-8 -mt-16 md:-mt-20 flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
             <div className="relative">
               <img
                 src={user.avatar}
                 alt={user.name}
-                className="w-32 h-32 md:w-40 md:h-40 rounded-3xl object-cover border-4 border-white dark:border-black shadow-2xl"
+                className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-3xl object-cover border-4 border-white dark:border-black shadow-2xl"
               />
               {isOwnProfile && (
                 <button 
@@ -281,18 +281,18 @@ const Profile = () => {
               )}
             </div>
             <div className="pb-2">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-1 dark:text-white">{user.name}</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight mb-1 dark:text-white">{user.name}</h1>
               <p className="text-zinc-500 dark:text-zinc-400 font-medium">@{user.email?.split('@')[0]}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pb-2">
+          <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 pb-2">
             {!isOwnProfile && currentUser && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-1 sm:flex-none items-center gap-2">
               <button
                 onClick={() => toggleMute(user.id)}
                 className={cn(
-                  "px-8 py-2.5 rounded-full font-bold transition-all flex items-center gap-2 shadow-lg",
+                  "px-4 sm:px-6 py-2.5 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base flex-1 sm:flex-none",
                   isMuted 
                     ? "bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800" 
                     : "bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200"
@@ -304,7 +304,7 @@ const Profile = () => {
               <button
                 onClick={() => toggleFollow(user.id)}
                 className={cn(
-                  "px-8 py-2.5 rounded-full font-bold transition-all flex items-center gap-2 shadow-lg",
+                  "px-4 sm:px-6 py-2.5 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base flex-1 sm:flex-none",
                   isFollowing 
                     ? "bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800" 
                     : "bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800  dark:hover:bg-zinc-200"

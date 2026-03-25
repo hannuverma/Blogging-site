@@ -102,12 +102,12 @@ const Connections = () => {
   const CurrentIcon = SECTION_CONFIG[safeSection].icon;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="mx-auto max-w-4xl space-y-6 sm:space-y-8">
       <header className="space-y-2">
         <Link to={userId ? `/profile/${profileUser.id}` : '/profile'} className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           Back to profile
         </Link>
-        <h1 className="text-3xl font-black tracking-tight dark:text-white">{profileUser.name || 'User'} Connections</h1>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight dark:text-white">{profileUser.name || 'User'} Connections</h1>
         <p className="text-zinc-500 dark:text-zinc-400">Browse followers, following, and muted authors.</p>
       </header>
 
@@ -148,7 +148,7 @@ const Connections = () => {
       </div>
 
       <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+        <div className="px-4 sm:px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
           <CurrentIcon size={18} className="text-zinc-500" />
           <h2 className="text-lg font-bold dark:text-white">{SECTION_CONFIG[safeSection].title}</h2>
           <span className="text-sm text-zinc-500">({connectionUsers.length})</span>
@@ -162,12 +162,12 @@ const Connections = () => {
               <Link
                 key={item.id}
                 to={`/profile/${item.id}`}
-                className="flex items-center gap-4 px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
               >
                 <img
                   src={item.avatar}
                   alt={item.name}
-                  className="w-12 h-12 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-700"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-700"
                 />
                 <div className="min-w-0">
                   <p className="font-bold truncate dark:text-white">{item.name}</p>

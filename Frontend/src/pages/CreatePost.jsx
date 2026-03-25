@@ -149,33 +149,33 @@ const CreatePost = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-4xl mx-auto"
+      className="mx-auto max-w-4xl"
     >
-      <header className="flex items-center justify-between mb-12">
-        <div className="flex items-center gap-4">
+      <header className="mb-8 flex flex-col gap-4 sm:mb-12 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => navigate(-1)}
             className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500"
           >
             <ArrowLeft size={24} />
           </button>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {isEditing ? 'Edit Story' : 'Write a New Story'}
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
           <button
             onClick={(e) => handleSubmit(e, false)}
             disabled={Loading}
-            className="px-6 py-2 border border-black dark:border-white hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold rounded-full transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2 border border-black dark:border-white hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Save size={18} /> Save as Draft
           </button>
           <button
             onClick={(e) => handleSubmit(e, true)}
             disabled={Loading}
-            className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-bold rounded-full transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
+            className="px-5 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-bold rounded-full transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
           >
             <Send size={18} /> {isEditing ? 'Publish Story' : 'Publish Story'}
           </button>
@@ -190,7 +190,7 @@ const CreatePost = () => {
             value={Post.title}
             onChange={(e) => setPost({ ...Post, title: e.target.value })}
             placeholder="Enter a catchy title..."
-            className="w-full text-4xl md:text-5xl font-black bg-transparent border-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
+            className="w-full text-3xl sm:text-4xl md:text-5xl font-black bg-transparent border-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
           />
         </div>
 
@@ -200,7 +200,7 @@ const CreatePost = () => {
             value={Post.description}
             onChange={(e) => setPost({ ...Post, description: e.target.value })}
             placeholder="A short summary of your story..."
-            className="w-full text-xl font-medium bg-transparent border-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 resize-none min-h-20"
+            className="w-full text-base sm:text-xl font-medium bg-transparent border-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 resize-none min-h-20"
           />
         </div>
 
@@ -287,7 +287,7 @@ const CreatePost = () => {
             value={Post.content}
             onChange={(e) => setPost({ ...Post, content: e.target.value })}
             placeholder="Tell your story..."
-            className="w-full text-lg leading-relaxed bg-transparent border-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 min-h-100 resize-none"
+            className="w-full text-base sm:text-lg leading-relaxed bg-transparent border-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 min-h-100 resize-none"
           />
         </div>
       </form>
@@ -298,7 +298,7 @@ const CreatePost = () => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-8 right-8 bg-emerald-500 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-50"
+            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 sm:bottom-8 bg-emerald-500 text-white px-6 sm:px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-50"
           >
             <CheckCircle2 size={32} />
             <div>

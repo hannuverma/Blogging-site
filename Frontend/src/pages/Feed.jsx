@@ -74,12 +74,12 @@ const PostCard = ({ post: initialPost, currentUser }) => {
       exit={{ opacity: 0, scale: 0.95 }}
       className="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
     >
-      <div className="flex items-center gap-6 p-6">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
         {/* Left: Author + Content */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* Author row */}
-          <div className="flex items-center gap-3 -mt-1">
+          <div className="flex items-center gap-3">
             <Link to={`/profile/${post.authorId}`} className="shrink-0">
               <img src={post.authorAvatar} alt={post.authorName} className="w-11 h-11 rounded-full object-cover border border-zinc-100 dark:border-zinc-800" />
             </Link>
@@ -95,7 +95,7 @@ const PostCard = ({ post: initialPost, currentUser }) => {
 
           {/* Title + Description */}
           <Link to={`/post/${post.id}`} className="block group/title mt-2">
-            <h2 className="text-xl font-bold group-hover/title:underline leading-snug">
+            <h2 className="text-lg sm:text-xl font-bold group-hover/title:underline leading-snug">
               {post.title}
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 text-sm line-clamp-2 mt-2 leading-relaxed">
@@ -104,8 +104,8 @@ const PostCard = ({ post: initialPost, currentUser }) => {
           </Link>
 
           {/* Actions */}
-          <div className="flex items-center justify-between mt-7 pt-2">
-            <div className="flex items-center gap-5">
+          <div className="mt-4 flex items-center justify-between gap-3 pt-1 sm:mt-7 sm:gap-4 sm:pt-2">
+            <div className="flex items-center gap-3 sm:gap-5">
               <button
                 onClick={handleLikeClick}
                 className={cn(
@@ -168,11 +168,11 @@ const PostCard = ({ post: initialPost, currentUser }) => {
         </div>
 
         {/* Right: Thumbnail */}
-        <Link to={`/post/${post.id}`} className="shrink-0">
+        <Link to={`/post/${post.id}`} className="w-full shrink-0 sm:w-auto">
           <img
             src={post.image}
             alt={post.title}
-            className="w-64 h-44 sm:w-72 sm:h-48 object-cover rounded-xl group-hover:opacity-90 transition-opacity"
+            className="h-44 w-full rounded-xl object-cover transition-opacity group-hover:opacity-90 sm:h-48 sm:w-72"
             referrerPolicy="no-referrer"
           />
         </Link>
