@@ -65,6 +65,7 @@ const PostCard = ({ post: initialPost, currentUser }) => {
 
   if (isMuted) return null;
 
+
   return (
     <motion.div
       layout
@@ -73,126 +74,108 @@ const PostCard = ({ post: initialPost, currentUser }) => {
       exit={{ opacity: 0, scale: 0.95 }}
       className="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300"
     >
-      <Link to={`/post/${post.id}`} className="block aspect-video overflow-hidden">
-        <img
-          src={post.image}
-          alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          referrerPolicy="no-referrer"
-        />
-      </Link>
+      <div className="flex items-center gap-6 p-6">
+        {/* Left: Author + Content */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-3">
+          {/* Author row */}
+          <div className="flex items-center gap-3 -mt-1">
             <Link to={`/profile/${post.authorId}`} className="shrink-0">
-              <img src={post.authorAvatar} alt={post.authorName} className="w-10 h-10 rounded-full object-cover border border-zinc-100 dark:border-zinc-800" />
+              <img src={post.authorAvatar} alt={post.authorName} className="w-11 h-11 rounded-full object-cover border border-zinc-100 dark:border-zinc-800" />
             </Link>
             <div>
-              <Link to={`/profile/${post.authorId}`} className="text-sm font-bold hover:underline transition-colors">
+              <Link to={`/profile/${post.authorId}`} className="text-sm font-bold hover:underline block">
                 {post.authorName}
               </Link>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
                 {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-              </p>
+              </span>
             </div>
           </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <MoreHorizontal size={20} />
-            </button>
+          {/* Title + Description */}
+          <Link to={`/post/${post.id}`} className="block group/title mt-2">
+            <h2 className="text-xl font-bold group-hover/title:underline leading-snug">
+              {post.title}
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm line-clamp-2 mt-2 leading-relaxed">
+              {post.description}
+            </p>
+          </Link>
 
-            <AnimatePresence>
-              {showMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
-                  >
-                    <button
-                      onClick={() => {
-                        toggleFollow(post.authorId);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+          {/* Actions */}
+          <div className="flex items-center justify-between mt-7 pt-2">
+            <div className="flex items-center gap-5">
+              <button
+                onClick={handleLikeClick}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors",
+                  isLiked ? "text-rose-500" : "text-zinc-500 hover:text-rose-500"
+                )}
+              >
+                <Heart size={23} fill={isLiked ? "currentColor" : "none"} />
+                <span>{post.likes.length}</span>
+              </button>
+              <Link to={`/post/${post.id}#comments`} className="flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-colors">
+                <MessageCircle size={23} />
+                <span>{post.commentCount}</span>
+              </Link>
+              <button
+                onClick={handleBookmarkClick}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors",
+                  isBookmarked ? "text-black dark:text-white" : "text-zinc-500 hover:text-black dark:hover:text-white"
+                )}
+              >
+                <Bookmark size={23} fill={isBookmarked ? "currentColor" : "none"} />
+              </button>
+            </div>
+
+            {/* Three-dot menu */}
+            <div className="relative">
+              <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                <MoreHorizontal size={22} />
+              </button>
+              <AnimatePresence>
+                {showMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
                     >
-                      {isFollowing ? <UserMinus size={16} /> : <UserPlus size={16} />}
-                      {isFollowing ? 'Unfollow author' : 'Follow author'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        toggleMute(post.authorId);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-amber-500"
-                    >
-                      <EyeOff size={16} />
-                      {isMuted ? 'Unmute author' : 'Mute author'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        reportUser(post.authorId);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-red-500"
-                    >
-                      <Flag size={16} />
-                      Report author
-                    </button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+                      <button onClick={() => { toggleFollow(post.authorId); setShowMenu(false); }} className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                        {isFollowing ? <UserMinus size={17} /> : <UserPlus size={17} />}
+                        {isFollowing ? 'Unfollow author' : 'Follow author'}
+                      </button>
+                      <button onClick={() => { toggleMute(post.authorId); setShowMenu(false); }} className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-amber-500">
+                        <EyeOff size={17} />
+                        {isMuted ? 'Unmute author' : 'Mute author'}
+                      </button>
+                      <button onClick={() => { reportUser(post.authorId); setShowMenu(false); }} className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-red-500">
+                        <Flag size={17} />
+                        Report author
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
+
         </div>
 
-        <Link to={`/post/${post.id}`} className="block group/title">
-          <h2 className="text-xl font-bold mb-2 group-hover/title:underline transition-colors leading-tight">
-            {post.title}
-          </h2>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mb-6">
-            {post.description}
-          </p>
+        {/* Right: Thumbnail */}
+        <Link to={`/post/${post.id}`} className="shrink-0">
+          <img
+            src={post.image}
+            alt={post.title}
+            className="w-64 h-44 sm:w-72 sm:h-48 object-cover rounded-xl group-hover:opacity-90 transition-opacity"
+            referrerPolicy="no-referrer"
+          />
         </Link>
-
-        <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleLikeClick}
-              className={cn(
-                "flex items-center gap-1.5 text-sm font-medium transition-colors",
-                isLiked ? "text-rose-500" : "text-zinc-500 hover:text-rose-500"
-              )}
-            >
-              <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-              <span>{post.likes.length}</span>
-            </button>
-            <Link
-              to={`/post/${post.id}#comments`}
-              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-colors"
-            >
-              <MessageCircle size={18} />
-              <span>{post.commentCount}</span>
-            </Link>
-          </div>
-
-          <button
-            onClick={handleBookmarkClick}
-            className={cn(
-              "p-2 rounded-full transition-colors",
-              isBookmarked ? "text-black dark:text-white bg-zinc-100 dark:bg-zinc-800" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            )}
-          >
-            <Bookmark size={18} fill={isBookmarked ? "currentColor" : "none"} />
-          </button>
-        </div>
       </div>
     </motion.div>
   );
@@ -276,7 +259,7 @@ const Feed = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="flex flex-col gap-4">
         <AnimatePresence mode="popLayout">
           {posts.map((post) => (
             <PostCard key={post.id} post={post} currentUser={currentUser} />

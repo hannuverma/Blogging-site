@@ -13,6 +13,7 @@ function cn(...inputs) {
 
 const PostDetail = () => {
   const {
+    posts,
     currentUser,
     fetchCurrentUser,
     fetchPostDetail,
@@ -32,26 +33,45 @@ const PostDetail = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [ReadingTime, setReadingTime] = useState(0);
+  const [isLoadingPost, setIsLoadingPost] = useState(true);
+  const [hasLoadedPost, setHasLoadedPost] = useState(false);
+
   const loadPostDetail = async () => {
     if (!id) return;
+    setIsLoadingPost(true);
+
+    const cachedPost = posts.find((p) => String(p.id) === String(id));
+    if (cachedPost) {
+      setPost(cachedPost);
+      setLikesCount(cachedPost?.likes?.length ?? 0);
+      setIsLiked(Boolean(cachedPost && currentUser && cachedPost.likes.includes(String(currentUser.id))));
+      setIsBookmarked(Boolean(currentUser?.bookmarks?.includes(String(cachedPost.id))));
+      const cachedWords = String(cachedPost?.content ?? '').trim().split(/\s+/).filter(Boolean).length;
+      setReadingTime(Math.max(1, Math.ceil(cachedWords / 200)));
+    }
+
     const detail = await fetchPostDetail(id);
     setPost(detail.post);
     setComments(detail.comments);
     setLikesCount(detail.post?.likes?.length ?? 0);
     setIsLiked(Boolean(detail.post && currentUser && detail.post.likes.includes(String(currentUser.id))));
     setIsBookmarked(Boolean(currentUser?.bookmarks?.includes(String(detail.post?.id))));
-    setReadingTime(Math.ceil(post.content.split(' ').length / 200)); // Assuming 200 WPM reading speed
+    const words = String(detail.post?.content ?? '').trim().split(/\s+/).filter(Boolean).length;
+    setReadingTime(Math.max(1, Math.ceil(words / 200))); // Assuming 200 WPM reading speed
+    setHasLoadedPost(true);
+    setIsLoadingPost(false);
   };
 
   useEffect(() => {
     const token = localStorage.getItem('access');
     (async () => {
+      const tasks = [loadPostDetail()];
       if (token) {
-        await fetchCurrentUser();
+        tasks.push(fetchCurrentUser());
       }
-      await loadPostDetail();
+      await Promise.allSettled(tasks);
     })();
-  }, [id, fetchCurrentUser, fetchPostDetail]);
+  }, [id, fetchCurrentUser, fetchPostDetail, posts]);
 
   useEffect(() => {
     if (post) {
@@ -74,7 +94,15 @@ const PostDetail = () => {
     }
   }, [post?.id, currentUser?.bookmarks]);
 
-  if (!post) {
+  if (isLoadingPost && !post) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-2xl font-bold mb-4">Loading post...</h2>
+      </div>
+    );
+  }
+
+  if (!isLoadingPost && hasLoadedPost && !post) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <h2 className="text-2xl font-bold mb-4">Post not found</h2>

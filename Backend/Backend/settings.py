@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from datetime import timedelta
 import os
 from pathlib import Path
+from urllib.parse import urlparse, parse_qsl
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,6 +44,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "cloudinary",
+    "cloudinary_storage",
 ]
 AUTH_USER_MODEL = 'api.User'
 MIDDLEWARE = [
@@ -96,12 +99,26 @@ WSGI_APPLICATION = "Backend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+tmpPostgres = urlparse('postgresql://neondb_owner:npg_zWrFZHsa41mV@ep-autumn-thunder-a13d20zm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': tmpPostgres.path.replace('/', ''),
+        'USER': tmpPostgres.username,
+        'PASSWORD': tmpPostgres.password,
+        'HOST': tmpPostgres.hostname,
+        'PORT': 5432,
+        'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
 
 
 # Password validation
@@ -142,8 +159,25 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'dwe6n6goq'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '786111112512728'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', '6G9GDXuSX_11dpt5mHHK9HWnBjI'),
+}
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", "staticfiles")
+DEFAULT_FILE_STORAGE = os.getenv("DEFAULT_FILE_STORAGE", "cloudinary_storage.storage.MediaCloudinaryStorage")

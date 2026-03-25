@@ -72,6 +72,8 @@ export const BlogProvider = ({ children }) => {
   });
 
   const [currentUser, setCurrentUser] = useState(() => {
+    const token = localStorage.getItem(ACCESS_TOKEN);
+    if (!token) return null;
     const saved = localStorage.getItem('vibe-blog-current-user');
     return saved ? JSON.parse(saved) : null;
   });
@@ -99,7 +101,11 @@ export const BlogProvider = ({ children }) => {
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem('vibe-blog-current-user', JSON.stringify(currentUser));
+    if (currentUser) {
+      localStorage.setItem('vibe-blog-current-user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('vibe-blog-current-user');
+    }
   }, [currentUser]);
 
   useEffect(() => {
@@ -278,6 +284,7 @@ export const BlogProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem(ACCESS_TOKEN);
     localStorage.removeItem(REFRESH_TOKEN);
+    localStorage.removeItem('vibe-blog-current-user');
     setCurrentUser(null);
   };
 

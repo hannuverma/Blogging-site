@@ -91,7 +91,7 @@ const CreatePost = () => {
             if (Post.category) {
                 FormDataToSend.append('category', Post.category);
             }
-            if (Post.image) {
+            if (Post.image instanceof File || Post.image instanceof Blob) {
                 FormDataToSend.append('image', Post.image);
             }
             if (isEditing) {
@@ -128,7 +128,7 @@ const CreatePost = () => {
             }
           }
         } catch (error) {
-            console.error('Error creating post:', error);
+          console.error('Error creating post:', error.response?.data || error);
         } finally {
             setLoading(false);
             setIsSaving(false);
