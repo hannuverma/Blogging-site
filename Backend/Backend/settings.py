@@ -95,7 +95,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "Backend.wsgi.application"
 
-
+CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
