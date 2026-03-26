@@ -276,19 +276,31 @@ export const BlogProvider = ({ children }) => {
 
   const updateUser = async (updates) => {
     if (!currentUser) return;
-    const updatedUser = { ...currentUser, ...updates };
-    const res = await api.post('/api/users/change_description/', {
+    const response = await api.post('/api/users/change_description/', {
       userId: currentUser.id,
-      ...updates
+      ...updates,
     });
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
-    
+
+    const normalized = normalizeUser(response.data);
+    const updatedUser = normalized ? { ...currentUser, ...normalized } : { ...currentUser, ...updates };
+
+    setCurrentUser(updatedUser);
+    setUsers((prev) =>
+      prev.map((u) => (String(u.id) === String(currentUser.id) ? updatedUser : u))
+    );
+
     if (updates.name || updates.avatar) {
-      setPosts(prev => prev.map(p => p.authorId === currentUser.id ? {
-        ...p,
-        authorName: updates.name || p.authorName,
-        authorAvatar: updates.avatar || p.authorAvatar
-      } : p));
+      setPosts((prev) =>
+        prev.map((p) =>
+          String(p.authorId) === String(currentUser.id)
+            ? {
+                ...p,
+                authorName: updatedUser.name || p.authorName,
+                authorAvatar: updatedUser.avatar || p.authorAvatar,
+              }
+            : p
+        )
+      );
     }
   };
 

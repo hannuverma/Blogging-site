@@ -268,24 +268,28 @@ def GetAllBookmarks(request):
 @permission_classes([IsAuthenticated])
 def ChangeUserDescription(request):
     user = request.user
-    if request.data.get('userId') != user.id:
+    request_user_id = request.data.get('userId')
+    if request_user_id is None:
+        return Response({"detail": "userId is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        request_user_id = int(request_user_id)
+    except (TypeError, ValueError):
+        return Response({"detail": "Invalid userId."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request_user_id != user.id:
         return Response({"detail": "You can only change your own description."}, status=status.HTTP_403_FORBIDDEN)
 
-    name = request.data.get('name', None)
-    bio = request.data.get('bio', '')
-    avatar = request.data.get('avatar', None)
-    website = request.data.get('website', None)
-    location = request.data.get('location', None)
-    if avatar:
-        user.avatar = avatar
-    if bio:
-        user.bio = bio
-    if name:
-        user.username = name
-    if website:
-        user.website = website
-    if location:
-        user.location = location
+    if 'avatar' in request.data:
+        user.avatar = request.data.get('avatar') or None
+    if 'bio' in request.data:
+        user.bio = request.data.get('bio') or ''
+    if 'name' in request.data:
+        user.username = request.data.get('name') or user.username
+    if 'website' in request.data:
+        user.website = request.data.get('website') or None
+    if 'location' in request.data:
+        user.location = request.data.get('location') or None
     
     user.save()
     serializer = UserSerializer(user)
