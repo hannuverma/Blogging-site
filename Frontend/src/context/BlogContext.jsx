@@ -274,10 +274,13 @@ export const BlogProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  const updateUser = (updates) => {
+  const updateUser = async (updates) => {
     if (!currentUser) return;
     const updatedUser = { ...currentUser, ...updates };
-    setCurrentUser(updatedUser);
+    const res = await api.post('/api/users/change_description/', {
+      userId: currentUser.id,
+      ...updates
+    });
     setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
     
     if (updates.name || updates.avatar) {

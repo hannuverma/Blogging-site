@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # Ensure these names match the variable names defined above exactly
-        fields = ("id", "username", "email", "password", "bookmarks", "followers", "following", "mute", "created_at", "avatar")
+        fields = ("id", "username", "email", "password", "bookmarks", "followers", "following", "mute", "created_at", "avatar", "bio", "location", "website")
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):

@@ -265,6 +265,32 @@ def GetAllBookmarks(request):
 #POST ----------------------------------------------------------------------------------
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ChangeUserDescription(request):
+    user = request.user
+    if request.data.get('userId') != user.id:
+        return Response({"detail": "You can only change your own description."}, status=status.HTTP_403_FORBIDDEN)
+
+    name = request.data.get('name', None)
+    bio = request.data.get('bio', '')
+    avatar = request.data.get('avatar', None)
+    website = request.data.get('website', None)
+    location = request.data.get('location', None)
+    if avatar:
+        user.avatar = avatar
+    if bio:
+        user.bio = bio
+    if name:
+        user.username = name
+    if website:
+        user.website = website
+    if location:
+        user.location = location
+    
+    user.save()
+    serializer = UserSerializer(user)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def google_login(request):
     token = request.data.get("token")

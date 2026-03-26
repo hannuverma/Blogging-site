@@ -91,6 +91,7 @@ const ProfileSettingsModal = memo(function ProfileSettingsModal({
               </div>
               <button
                 type="submit"
+                
                 className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl transition-all hover:scale-[1.02]"
               >
                 Save Changes

@@ -16,7 +16,6 @@ import Connections from './pages/Connections';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
 import ProtectedRoots from './components/ProtectedRoots';
-import Login from './pages/Login';
 
 const AppContent = () => {
   const { currentUser, fetchCurrentUser } = useBlog();
@@ -61,7 +60,6 @@ const AppContent = () => {
             element={currentUser ? <Navigate to="/" /> : <Auth />} 
           />
           
-          <Route path="/login" element={<Login />} />
           
           {/* Protected Routes */}
           <Route path="/create" element={<ProtectedRoots><CreatePost /></ProtectedRoots>} />

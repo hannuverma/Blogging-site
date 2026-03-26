@@ -11,6 +11,8 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["username"]  
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     avatar = models.URLField(blank=True, null=True)  # New field for Google profile picture
+    location = models.CharField(max_length=100, blank=True, null=True)  # New field for location
+    website = models.URLField(blank=True, null=True)  # New field for personal website
     def __str__(self):
         return self.username
     
