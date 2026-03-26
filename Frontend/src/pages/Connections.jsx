@@ -77,7 +77,7 @@ const Connections = () => {
           email: '',
         };
       }
-
+      
       return {
         id: String(id),
         name: `User ${id}`,

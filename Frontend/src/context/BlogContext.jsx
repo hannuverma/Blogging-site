@@ -23,6 +23,9 @@ const normalizeUser = (raw) => {
     reported: Array.isArray(raw.reported) ? raw.reported.map((id) => String(id)) : [],
     bookmarks: Array.isArray(raw.bookmarks) ? raw.bookmarks.map((id) => String(id)) : [],
     createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
+    bio: raw.bio ?? '',
+    website: raw.website ?? '',
+    location: raw.location ?? '',
   };
 };
 
@@ -280,7 +283,7 @@ export const BlogProvider = ({ children }) => {
       userId: currentUser.id,
       ...updates,
     });
-
+    console.log('User update response:', response);
     const normalized = normalizeUser(response.data);
     const updatedUser = normalized ? { ...currentUser, ...normalized } : { ...currentUser, ...updates };
 
