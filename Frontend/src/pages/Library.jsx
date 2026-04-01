@@ -20,7 +20,6 @@ const LibraryPostCard = ({ post, onDelete, onTogglePublish }) => {
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -164,7 +163,7 @@ const Library = () => {
       fetchUser();
       fetchUserPosts();
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
   }, []);
 
@@ -279,14 +278,14 @@ const Library = () => {
           >                                                                                                                                                                                                                                                        
             {tab}
             {activeTab === tab && (
-              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white" />
             )}
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {filteredPosts.map((post) => (                                                                                                                                                                                
             <LibraryPostCard 
               key={post.id} 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_POSTS, INITIAL_USERS } from '../constants';
 import api from '../api';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../constans';
@@ -90,6 +90,8 @@ export const BlogProvider = ({ children }) => {
   });
 
   const [theme] = useState('dark');
+  const followInFlightRef = useRef(new Set());
+  const fetchCurrentUserSeqRef = useRef(0);
 
   const [isFetchingPosts, setIsFetchingPosts] = useState(false);
   const [isFetchingUser, setIsFetchingUser] = useState(false);
@@ -124,15 +126,22 @@ export const BlogProvider = ({ children }) => {
   const toggleTheme = () => {};
 
   const fetchCurrentUser = useCallback(async () => {
+    const requestSeq = ++fetchCurrentUserSeqRef.current;
     const token = localStorage.getItem(ACCESS_TOKEN);
     if (!token) {
-      setCurrentUser(null);
+      if (requestSeq === fetchCurrentUserSeqRef.current) {
+        setCurrentUser(null);
+      }
       return null;
     }
 
     setIsFetchingUser(true);
     try {
       const res = await api.get('/api/whoami/');
+      if (requestSeq !== fetchCurrentUserSeqRef.current) {
+        return null;
+      }
+
       const normalized = normalizeUser(res.data);
       
       setCurrentUser(normalized);
@@ -147,10 +156,14 @@ export const BlogProvider = ({ children }) => {
       }
       return normalized;
     } catch (error) {
-      setCurrentUser(null);
+      if (requestSeq === fetchCurrentUserSeqRef.current) {
+        setCurrentUser(null);
+      }
       return null;
     } finally {
-      setIsFetchingUser(false);
+      if (requestSeq === fetchCurrentUserSeqRef.current) {
+        setIsFetchingUser(false);
+      }
     }
   }, []);
 
@@ -333,11 +346,20 @@ export const BlogProvider = ({ children }) => {
   };
 
   const deletePost = async (id) => {
+    const postId = String(id);
+    const previousPosts = posts;
+    const previousComments = comments;
+
+    setPosts((prev) => prev.filter((post) => String(post.id) !== postId));
+    setComments((prev) => prev.filter((comment) => String(comment.postId) !== postId));
+
     try {
-        await api.delete(`/api/posts/${id}/delete/`);
-        setPosts(prev => prev.filter(p => p.id !== id));
+      await api.delete(`/api/posts/${id}/delete/`);
     } catch (error) {
-        console.error("Delete failed", error);
+      setPosts(previousPosts);
+      setComments(previousComments);
+      console.error('Delete failed', error);
+      throw error;
     }
   };
 
@@ -371,6 +393,8 @@ export const BlogProvider = ({ children }) => {
     const targetUserId = String(userId);
     const currentUserId = String(currentUser.id);
     if (!targetUserId || currentUserId === targetUserId) return;
+    if (followInFlightRef.current.has(targetUserId)) return;
+    followInFlightRef.current.add(targetUserId);
 
     const currentFollowing = Array.isArray(currentUser.following)
       ? currentUser.following.map((id) => String(id))
@@ -413,11 +437,43 @@ export const BlogProvider = ({ children }) => {
     );
 
     try {
-      await api.post('/api/users/follow/', {
+      const response = await api.post('/api/users/follow/', {
         userId: currentUserId,
         targetUserId,
       });
-      await fetchCurrentUser();
+
+      const normalizedCurrent = normalizeUser(response?.data?.currentUser);
+      const normalizedTarget = normalizeUser(response?.data?.targetUser);
+
+      if (normalizedCurrent) {
+        setCurrentUser(normalizedCurrent);
+      } else {
+        await fetchCurrentUser();
+      }
+
+      setUsers((prev) => {
+        let next = [...prev];
+
+        if (normalizedCurrent) {
+          const currentIdx = next.findIndex((u) => String(u.id) === String(normalizedCurrent.id));
+          if (currentIdx >= 0) {
+            next[currentIdx] = { ...next[currentIdx], ...normalizedCurrent };
+          } else {
+            next = [normalizedCurrent, ...next];
+          }
+        }
+
+        if (normalizedTarget) {
+          const targetIdx = next.findIndex((u) => String(u.id) === String(normalizedTarget.id));
+          if (targetIdx >= 0) {
+            next[targetIdx] = { ...next[targetIdx], ...normalizedTarget };
+          } else {
+            next = [normalizedTarget, ...next];
+          }
+        }
+
+        return next;
+      });
     } catch (error) {
       // Revert optimistic update if backend request fails.
       setCurrentUser(currentUser);
@@ -425,6 +481,8 @@ export const BlogProvider = ({ children }) => {
         prev.map((u) => (String(u.id) === currentUserId ? currentUser : u))
       );
       console.error('Error toggling follow:', error);
+    } finally {
+      followInFlightRef.current.delete(targetUserId);
     }
   };
 

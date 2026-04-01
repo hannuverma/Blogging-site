@@ -58,7 +58,7 @@ function ProtectedRoots({children}) {
         )
     }
 
-    return IsAuthorized ? children : <Navigate to="/login" />
+    return IsAuthorized ? children : <Navigate to="/auth" />
 }
 
 export default ProtectedRoots

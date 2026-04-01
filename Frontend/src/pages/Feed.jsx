@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, MessageCircle, MoreHorizontal, UserPlus, UserMinus, EyeOff, Flag, Bookmark, Eye   } from 'lucide-react';
+import { Search, Heart, MessageCircle, MoreHorizontal, UserPlus, UserMinus, EyeOff, Flag, Bookmark, Eye, Trash2, Edit3   } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion'; // Using standard framer-motion
@@ -12,7 +12,7 @@ function cn(...inputs) {
 }
 
 const PostCard = ({ post: initialPost, currentUser }) => {
-  const { toggleLike, toggleBookmark, toggleFollow, toggleMute, reportUser, fetchCurrentUser } = useBlog();
+  const { toggleLike, toggleBookmark, toggleFollow, toggleMute, reportUser, fetchCurrentUser, deletePost } = useBlog();
   const [showMenu, setShowMenu] = useState(false);
   const [post, setPost] = useState(initialPost);
   
@@ -26,6 +26,17 @@ const PostCard = ({ post: initialPost, currentUser }) => {
   const isBookmarked = currentUser ? currentUser.bookmarks.includes(String(post.id)) : false;
   const isFollowing = currentUser ? currentUser.following.includes(String(post.authorId)) : false;
   const isMuted = currentUser ? currentUser.muted.includes(String(post.authorId)) : false;
+  const isAuthor = String(currentUser?.id) === String(post.authorId);
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      try {
+        await deletePost(post.id);
+      } catch (error) {
+        console.error('Error deleting post:', error);
+      }
+    }
+  };
 
   const handleBookmarkClick = async () => {
     if (!currentUser) {
@@ -68,7 +79,6 @@ const PostCard = ({ post: initialPost, currentUser }) => {
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -137,7 +147,7 @@ const PostCard = ({ post: initialPost, currentUser }) => {
                 <MoreHorizontal size={22} />
               </button>
               <AnimatePresence>
-                {showMenu && (
+                {showMenu && !isAuthor && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                     <motion.div
@@ -161,6 +171,30 @@ const PostCard = ({ post: initialPost, currentUser }) => {
                     </motion.div>
                   </>
                 )}
+
+                {showMenu && isAuthor && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
+                    >
+                      <Link
+                        to={`/edit/${post.id}`}
+                        className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                      >
+                        <Edit3 size={17} />
+                        Edit post
+                      </Link>
+                      <button onClick={() => { handleDelete(); setShowMenu(false); }} className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-red-500">
+                        <Trash2 size={17} />
+                        delete post
+                      </button>
+                    </motion.div>
+                  </>
+                )}
               </AnimatePresence>
             </div>
           </div>
@@ -172,7 +206,7 @@ const PostCard = ({ post: initialPost, currentUser }) => {
           <img
             src={post.image}
             alt={post.title}
-            className="h-44 w-full rounded-xl object-cover transition-opacity group-hover:opacity-90 sm:h-48 sm:w-72"
+            className="h-44 w-full object-contain bg-white dark:bg-zinc-900 transition-opacity group-hover:opacity-90 sm:h-48 sm:w-72"
             referrerPolicy="no-referrer"
           />
         </Link>
@@ -260,7 +294,7 @@ const Feed = () => {
       </div>
 
       <div className="flex flex-col gap-4">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {posts.map((post) => (
             <PostCard key={post.id} post={post} currentUser={currentUser} />
           ))}

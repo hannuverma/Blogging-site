@@ -60,25 +60,49 @@ def toggleReport(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def toggleFollow(request):
-    userId = request.data.get('userId')
     targetUserId = request.data.get('targetUserId')
+    user = request.user
 
-    if not userId or not targetUserId:
-        return Response({"detail": "Both userId and targetUserId are required."}, status=status.HTTP_400_BAD_REQUEST)
+    if not targetUserId:
+        return Response({"detail": "targetUserId is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    if userId == targetUserId:
+    # Optional guard if client still sends userId.
+    provided_user_id = request.data.get('userId')
+    if provided_user_id is not None and str(provided_user_id) != str(user.id):
+        return Response({"detail": "userId does not match authenticated user."}, status=status.HTTP_403_FORBIDDEN)
+
+    if str(user.id) == str(targetUserId):
         return Response({"detail": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        follow, created = Follow.objects.get_or_create(follower_id=userId, following_id=targetUserId)
+        follow, created = Follow.objects.get_or_create(follower_id=user.id, following_id=targetUserId)
+
+        target_user = User.objects.get(id=targetUserId)
 
         if not created:
             follow.delete()
-            return Response({"detail": "Unfollowed successfully."}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "detail": "Unfollowed successfully.",
+                    "currentUser": UserSerializer(user).data,
+                    "targetUser": UserSerializer(target_user).data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
-        return Response({"detail": "Followed successfully."}, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "detail": "Followed successfully.",
+                "currentUser": UserSerializer(user).data,
+                "targetUser": UserSerializer(target_user).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
+    except User.DoesNotExist:
+        return Response({"detail": "Target user not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -294,6 +318,8 @@ def ChangeUserDescription(request):
     user.save()
     serializer = UserSerializer(user)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def google_login(request):

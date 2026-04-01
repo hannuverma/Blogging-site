@@ -280,8 +280,8 @@ const PostDetail = () => {
           </p>
         </header>
 
-        <div className="aspect-video rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl">
-          <img src={safeImage} alt={post.title} className="w-full h-full object-cover" />
+        <div className="aspect-video rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-zinc-50 dark:bg-zinc-950">
+          <img src={safeImage} alt={post.title} className="w-full h-full object-contain bg-zinc-50 dark:bg-zinc-950" />
         </div>
 
         <div className="prose prose-zinc dark:prose-invert max-w-none text-lg leading-relaxed space-y-6">
@@ -349,7 +349,7 @@ const PostDetail = () => {
             </form>
 
             <div className="space-y-6">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence>
                 {postComments.map((comment) => (
                   <motion.div
                     key={comment.id}

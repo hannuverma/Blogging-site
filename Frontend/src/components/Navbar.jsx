@@ -4,7 +4,7 @@ import { LogOut, Menu, X } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 
 const Navbar = () => {
-  const { currentUser, fetchCurrentUser, logout } = useBlog();
+  const { currentUser, logout } = useBlog();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -13,10 +13,6 @@ const Navbar = () => {
     logout();
     navigate('/');
   };
-
-  useEffect(() => {
-    fetchCurrentUser();
-  }, [location.pathname, fetchCurrentUser]);
 
   useEffect(() => {
     setMobileOpen(false);

@@ -166,6 +166,7 @@ const Profile = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [DeleteAccount, setDeleteAccount] = useState(false);
+  const [isFollowPending, setIsFollowPending] = useState(false);
   const deleteAccount = useCallback( async () => {
     if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
       try{
@@ -244,12 +245,35 @@ const Profile = () => {
       return () => {
         cancelled = true;
       };
-    }, [userId, users, posts]);
+    }, [userId, posts]);
 
   const user = useMemo(() => {
     if (!userId) return currentUser;
-    const existing = users.find((u) => String(u.id) === String(userId));
-    return fetchedUser || existing;
+    const targetUserId = String(userId);
+    const existing = users.find((u) => String(u.id) === targetUserId);
+    const fetched = fetchedUser && String(fetchedUser.id) === targetUserId ? fetchedUser : null;
+
+    if (!existing) return fetched;
+
+    return {
+      ...(fetched || {}),
+      ...existing,
+      followers: Array.isArray(existing.followers)
+        ? existing.followers
+        : Array.isArray(fetched?.followers)
+        ? fetched.followers
+        : [],
+      following: Array.isArray(existing.following)
+        ? existing.following
+        : Array.isArray(fetched?.following)
+        ? fetched.following
+        : [],
+      muted: Array.isArray(existing.muted)
+        ? existing.muted
+        : Array.isArray(fetched?.muted)
+        ? fetched.muted
+        : [],
+    };
   }, [users, userId, currentUser, fetchedUser]);
 
   const userPosts = useMemo(() => {
@@ -286,6 +310,17 @@ const Profile = () => {
     () => currentUser?.muted?.some((id) => String(id) === String(user?.id)) ?? false,
     [currentUser, user?.id]
   );
+
+  const handleToggleFollow = useCallback(async () => {
+    if (!currentUser || !user || isOwnProfile || isFollowPending) return;
+
+    setIsFollowPending(true);
+    try {
+      await toggleFollow(String(user.id));
+    } finally {
+      setIsFollowPending(false);
+    }
+  }, [currentUser, user, isOwnProfile, isFollowPending, toggleFollow]);
 
   const handleUpdateProfile = (e) => {
     e.preventDefault();
@@ -357,9 +392,11 @@ const Profile = () => {
                 {isMuted ? 'Unmute' : 'Mute'}
               </button>
               <button
-                onClick={() => toggleFollow(user.id)}
+                onClick={handleToggleFollow}
+                disabled={isFollowPending}
                 className={cn(
                   "px-4 sm:px-6 py-2.5 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base flex-1 sm:flex-none",
+                  isFollowPending && "opacity-70 cursor-not-allowed",
                   isFollowing 
                     ? "bg-white dark:bg-black border border-black dark:border-white text-black dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800" 
                     : "bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800  dark:hover:bg-zinc-200"
