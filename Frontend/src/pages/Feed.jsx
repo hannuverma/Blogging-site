@@ -218,9 +218,18 @@ const PostCard = ({ post: initialPost, currentUser }) => {
 const Feed = () => {
   const { posts, currentUser, fetchCurrentUser, fetchCategories, fetchPosts, isFetchingPosts } = useBlog();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeCategory, setActiveCategory] = useState('All');
   const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   useEffect(() => {
     (async () => {
@@ -234,8 +243,8 @@ const Feed = () => {
   }, [fetchCategories, fetchCurrentUser]);
 
   useEffect(() => {
-    fetchPosts({ category: activeCategory, search: searchQuery });
-  }, [activeCategory, searchQuery, fetchPosts]);
+    fetchPosts({ category: activeCategory, search: debouncedSearchQuery });
+  }, [activeCategory, debouncedSearchQuery, fetchPosts]);
 
   return (
     <div className="space-y-8">

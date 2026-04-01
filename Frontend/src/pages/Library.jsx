@@ -126,11 +126,14 @@ const Library = () => {
   const [posts, setPosts] = useState([]);
   const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
   const fetchUserPosts = async () => {
+    setIsLoadingPosts(true);
     try {
       const res = await api.get("/api/user/posts/");
       const normalizedPosts = Array.isArray(res.data) ? res.data.map(post => ({
@@ -140,6 +143,8 @@ const Library = () => {
       setPosts(normalizedPosts);
     } catch (error) {
       console.error("Failed to fetch user posts:", error);
+    } finally {
+      setIsLoadingPosts(false);
     }
   };
 
@@ -180,7 +185,8 @@ const Library = () => {
 
   const handleTogglePublish = async (id, currentStatus) => {
     try {
-      const res = await api.patch(`/api/user/posts/${id}/`, { published: !currentStatus });
+      const res = await api.patch(`/api/posts/${id}/edit/`, { published: !currentStatus });
+      console.log("Publish toggle response:", res.data);
       setPosts(posts.map(p => p.id === id ? { ...p, published: res.data.published } : p));
     } catch (err) {
       alert("Update failed");
@@ -188,6 +194,7 @@ const Library = () => {
   };
 
   const fetchBookmarkedPosts = async () => {
+    setIsLoadingBookmarks(true);
     try {
       const [bookmarksRes, allPostsRes] = await Promise.all([
         api.get("/api/bookmarks/"),
@@ -216,6 +223,8 @@ const Library = () => {
       })));
     } catch (err) {
       console.error("Failed to fetch bookmarks", err);
+    } finally {
+      setIsLoadingBookmarks(false);
     }
   };
 
@@ -300,8 +309,14 @@ const Library = () => {
       {filteredPosts.length === 0 && (
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
           <LibraryIcon className="text-zinc-400 mx-auto mb-4" size={32} />
-          <h3 className="text-lg font-semibold">No stories found</h3>
-          <p className="text-zinc-500">Try changing your filters or write a new story.</p>
+          <h3 className="text-lg font-semibold">
+            {(isLoadingPosts || (activeTab === 'bookmarks' && isLoadingBookmarks)) ? 'Fetching stories...' : 'No stories found'}
+          </h3>
+          <p className="text-zinc-500">
+            {(isLoadingPosts || (activeTab === 'bookmarks' && isLoadingBookmarks))
+              ? 'Please wait while we load your library.'
+              : 'Try changing your filters or write a new story.'}
+          </p>
         </div>
       )}
     </div>

@@ -58,10 +58,15 @@ class PostSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
 
     def get_commentCount(self, obj):
+        if hasattr(obj, 'comment_count'):
+            return obj.comment_count
         return obj.comments.count()
 
     def get_likes(self, obj):
         # Return array of user IDs who liked this post
+        prefetched_likes = getattr(obj, '_prefetched_objects_cache', {}).get('likes')
+        if prefetched_likes is not None:
+            return [like.user_id for like in prefetched_likes]
         return list(obj.likes.values_list('user_id', flat=True))
 
     class Meta:

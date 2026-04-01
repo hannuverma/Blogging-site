@@ -16,9 +16,10 @@ import os
 from django.db.models import Avg
 from rest_framework.exceptions import ValidationError
 from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 from .serializers import PostSerializer, UserSerializer, CommentSerializer, BookmarkSerializer
 from .models import Mute, User, Post, Comment, Like, Follow, Bookmark
-from django.db.models import Q
+from django.db.models import Q, Count
 from google.oauth2 import id_token
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -26,6 +27,28 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 CLIENT_ID = "379118052183-m8c5h1g87oecvpbmnsclijamf4ocp9il.apps.googleusercontent.com"
+POSTS_CACHE_VERSION_KEY = 'posts_cache_version'
+POSTS_CACHE_TTL_SECONDS = 60
+
+
+def _get_posts_cache_version():
+    version = cache.get(POSTS_CACHE_VERSION_KEY)
+    if version is None:
+        version = 1
+        cache.set(POSTS_CACHE_VERSION_KEY, version, timeout=None)
+    return version
+
+
+def _build_posts_cache_key(category='All', search=''):
+    version = _get_posts_cache_version()
+    normalized_category = str(category or 'All').strip() or 'All'
+    normalized_search = str(search or '').strip().lower()
+    return f"posts:v{version}:category={normalized_category}:search={normalized_search}"
+
+
+def _invalidate_posts_cache():
+    next_version = _get_posts_cache_version() + 1
+    cache.set(POSTS_CACHE_VERSION_KEY, next_version, timeout=None)
 
 #toggling
 
@@ -120,8 +143,10 @@ def toggleLike(request, post_id):
 
     if not created:
         like.delete()
+        _invalidate_posts_cache()
         return Response({"detail": "Like removed."}, status=status.HTTP_200_OK)
 
+    _invalidate_posts_cache()
     return Response({"detail": "Post liked."}, status=status.HTTP_201_CREATED)
 
 
@@ -215,12 +240,24 @@ def whoAmI(request):
 def RetrievePostView(request):
     if request.method == 'POST':
         data = request.data
-        post = Post.objects.filter(published=True).order_by('-updated_at', '-created_at')
+        category = data.get('category', 'All')
+        search_query = data.get('search', '')
+        cache_key = _build_posts_cache_key(category=category, search=search_query)
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data, status=status.HTTP_200_OK)
 
-        category = data.get('category', None)
+        post = (
+            Post.objects.filter(published=True)
+            .select_related('author')
+            .prefetch_related('likes')
+            .annotate(comment_count=Count('comments'))
+            .order_by('-updated_at', '-created_at')
+        )
+
         if category and category != 'All':
             post = post.filter(category=category)
-        search_query = data.get('search', None)
+        search_query = str(search_query).strip()
         if search_query:
             post = post.filter(
                 Q(title__icontains=search_query) | 
@@ -228,11 +265,26 @@ def RetrievePostView(request):
                 Q(author__username__icontains=search_query)
             )
         serializer = PostSerializer(post, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        response_data = serializer.data
+        cache.set(cache_key, response_data, timeout=POSTS_CACHE_TTL_SECONDS)
+        return Response(response_data, status=status.HTTP_200_OK)
     else:
-        post = Post.objects.filter(published=True).order_by('-updated_at', '-created_at')
+        cache_key = _build_posts_cache_key(category='All', search='')
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data, status=status.HTTP_200_OK)
+
+        post = (
+            Post.objects.filter(published=True)
+            .select_related('author')
+            .prefetch_related('likes')
+            .annotate(comment_count=Count('comments'))
+            .order_by('-updated_at', '-created_at')
+        )
         serializer = PostSerializer(post, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        response_data = serializer.data
+        cache.set(cache_key, response_data, timeout=POSTS_CACHE_TTL_SECONDS)
+        return Response(response_data, status=status.HTTP_200_OK)
     return Response({"detail": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['GET'])
@@ -316,6 +368,7 @@ def ChangeUserDescription(request):
         user.location = request.data.get('location') or None
     
     user.save()
+    _invalidate_posts_cache()
     serializer = UserSerializer(user)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -374,6 +427,7 @@ class CreatePostView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+        _invalidate_posts_cache()
 
 
 class UpdatePostView(generics.UpdateAPIView):
@@ -386,6 +440,7 @@ class UpdatePostView(generics.UpdateAPIView):
         if post.author != self.request.user:
             raise ValidationError("You do not have permission to edit this post.")
         serializer.save()
+        _invalidate_posts_cache()
 
 #DELETE ----------------------------------------------------------------------------------
 
@@ -403,6 +458,7 @@ def CreateCommentView(request, post_id):
 
     if serializer.is_valid():
         serializer.save(author=request.user, post=post)
+        _invalidate_posts_cache()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -418,6 +474,7 @@ def DeleteCommentView(request, comment_id):
         return Response({"detail": "You do not have permission to delete this comment."}, status=status.HTTP_403_FORBIDDEN)
 
     comment.delete()
+    _invalidate_posts_cache()
     return Response({"detail": "Comment deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -430,6 +487,7 @@ class DeletePostView(generics.DestroyAPIView):
         if instance.author != self.request.user:
             raise ValidationError("You do not have permission to delete this post.")
         instance.delete()
+        _invalidate_posts_cache()
         return Response({"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -438,4 +496,5 @@ class DeletePostView(generics.DestroyAPIView):
 def DeleteUserView(request):
     user = request.user
     user.delete()
+    _invalidate_posts_cache()
     return Response({"detail": "User account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)

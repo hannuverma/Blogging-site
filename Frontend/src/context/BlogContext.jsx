@@ -92,6 +92,7 @@ export const BlogProvider = ({ children }) => {
   const [theme] = useState('dark');
   const followInFlightRef = useRef(new Set());
   const fetchCurrentUserSeqRef = useRef(0);
+  const fetchPostsSeqRef = useRef(0);
 
   const [isFetchingPosts, setIsFetchingPosts] = useState(false);
   const [isFetchingUser, setIsFetchingUser] = useState(false);
@@ -178,19 +179,24 @@ export const BlogProvider = ({ children }) => {
   }, []);
 
   const fetchPosts = useCallback(async ({ category = 'All', search = '' } = {}) => {
+    const requestSeq = ++fetchPostsSeqRef.current;
     setIsFetchingPosts(true);
     try {
       const response = await api.post('/api/posts/', { category, search });
       const normalizedPosts = Array.isArray(response.data)
         ? response.data.map((post) => normalizePost(post))
         : [];
-      setPosts(normalizedPosts);
+      if (requestSeq === fetchPostsSeqRef.current) {
+        setPosts(normalizedPosts);
+      }
       return normalizedPosts;
     } catch (error) {
       console.error('Error fetching posts:', error);
       return [];
     } finally {
-      setIsFetchingPosts(false);
+      if (requestSeq === fetchPostsSeqRef.current) {
+        setIsFetchingPosts(false);
+      }
     }
   }, []);
 
