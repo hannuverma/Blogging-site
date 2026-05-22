@@ -15,7 +15,8 @@ const isPublicEndpoint = (url = "") => {
         /^\/?api\/categories\/?$/.test(normalized) ||
         /^\/?api\/token\/?$/.test(normalized) ||
         /^\/?api\/token\/refresh\/?$/.test(normalized) ||
-        /^\/?api\/user\/register\/?$/.test(normalized)
+        /^\/?api\/user\/register\/?$/.test(normalized) ||
+        /^\/?api\/auth\/google\/?$/.test(normalized)
     );
 };
 
