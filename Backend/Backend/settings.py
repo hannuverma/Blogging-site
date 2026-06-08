@@ -15,20 +15,30 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse, parse_qsl
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+
+def env(name, default=None):
+    value = os.getenv(name, default)
+    if value is None or value == "":
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-q8c*72lz)lm8x&4=m*uku=%0xb16#w#^94=q=@@o@tr+p4zv67"
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() in {"1", "true", "yes", "on"}
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()]
+ALLOWED_HOSTS = [h.strip() for h in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
 
 # Application definition
@@ -70,8 +80,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("SIMPLE_JWT_ACCESS_LIFETIME_MIN", "30"))),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("SIMPLE_JWT_REFRESH_LIFETIME_DAYS", "1"))),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env("SIMPLE_JWT_ACCESS_LIFETIME_MIN", "30"))),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(env("SIMPLE_JWT_REFRESH_LIFETIME_DAYS", "1"))),
 }
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
@@ -99,27 +109,29 @@ CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-tmpPostgres = urlparse('postgresql://neondb_owner:npg_zWrFZHsa41mV@ep-autumn-thunder-a13d20zm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
+database_url = os.getenv("DATABASE_URL")
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': tmpPostgres.path.replace('/', ''),
-        'USER': tmpPostgres.username,
-        'PASSWORD': tmpPostgres.password,
-        'HOST': tmpPostgres.hostname,
-        'PORT': 5432,
-        'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
+if database_url:
+    tmpPostgres = urlparse(database_url)
 
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": tmpPostgres.path.replace("/", ""),
+            "USER": tmpPostgres.username,
+            "PASSWORD": tmpPostgres.password,
+            "HOST": tmpPostgres.hostname,
+            "PORT": tmpPostgres.port or 5432,
+            "OPTIONS": dict(parse_qsl(tmpPostgres.query)),
+        }
     }
-}
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -161,25 +173,41 @@ CSRF_TRUSTED_ORIGINS = [
     "https://blogging-site-4ccx.onrender.com",
 ]
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'dwe6n6goq'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '786111112512728'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', '6G9GDXuSX_11dpt5mHHK9HWnBjI'),
-}
+cloudinary_cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+cloudinary_api_key = os.getenv("CLOUDINARY_API_KEY")
+cloudinary_api_secret = os.getenv("CLOUDINARY_API_SECRET")
 
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+if cloudinary_cloud_name and cloudinary_api_key and cloudinary_api_secret:
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": cloudinary_cloud_name,
+        "API_KEY": cloudinary_api_key,
+        "API_SECRET": cloudinary_api_secret,
+    }
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", "staticfiles")
-DEFAULT_FILE_STORAGE = os.getenv("DEFAULT_FILE_STORAGE", "cloudinary_storage.storage.MediaCloudinaryStorage")
+STATIC_ROOT = BASE_DIR / env("STATIC_ROOT", "staticfiles")
